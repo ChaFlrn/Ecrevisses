@@ -28,18 +28,13 @@ data_fauna <- rbind(data_lignes,
 
 
 ###---------------------------------------------------------#
-cli::cli_h1("Trier la base de données") 
+cli::cli_h1("Récupérer les contributeurs et trier la base")
 
 data_fauna <- data_fauna %>%
+  left_join(data_meta, by = c("IdJdd" = "IdJeuDonnees")) %>%
   mutate(Date = substr(DateDebut, 1,4),
          Observateur = sub(".*\\(([^()]*)\\).*", "\\1", Observer),
-         Effectif = (DenbrMin + DenbrMax)/2)
-
-###---------------------------------------------------------#
-cli::cli_h1("Récupérer les contributeurs")
-
-data_fauna <- data_fauna %>%
-  left_join(data_meta, by = c("IdCadreAc" = "IdCadre")) %>%
+         Effectif = (DenbrMin + DenbrMax)/2) %>%
   select(Id = IdRegional,
          Date,
          Cdnom = CdNomCite,
@@ -48,15 +43,24 @@ data_fauna <- data_fauna %>%
          Classe,
          Ordre,
          Famille,
-         Observateur,
          Effectif,
          Departement = CodeDpt,
          Commune = NomCom,
          InseeCom,
          Fiabilite = NivValReg,
          Fournisseur,
-         GeomWkt,
-         TypeGeom,
-         IdCadreAc)
+         Geometrie = GeomWkt)
 
-unique(data_fauna$IdRegional)  
+###---------------------------------------------------------#
+cli::cli_h1("Vérifier les doublons")
+
+data_fauna <- data_fauna[!duplicated(data_fauna$Id), ]
+
+
+###---------------------------------------------------------#
+cli::cli_h1("Sauvegarder le fichier")
+
+st_write(data_fauna, "processed_data/data_fauna.gpkg", 
+         append = FALSE,
+         driver = "GPKG")
+

@@ -1,0 +1,38 @@
+---
+title: "etude_ecrevisse"
+output: html_document
+---
+
+# Introduction
+Contexte étude et objectifs
+
+
+
+# Présentation du jeu de données
+Origine et nature de la donnée
+Variables disponibles
+
+Description du volume de données
+
+Vérifications préliminaires : doublons, qualité
+
+
+# Analyse quantitative
+## Analyse descriptive
+
+## Analyse temporelle
+
+## Analyses spatiales
+
+## Analyses comparatives et statistiques
+
+
+
+# Analyse qualitative
+## Caractérisation des espèces
+
+## Description des habitats et contextes
+
+## Analyse des dynamiques écologiques
+
+## Analyse des biais et limites
