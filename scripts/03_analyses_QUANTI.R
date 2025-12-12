@@ -23,8 +23,7 @@ esp_legend <- bdd_ecrevisse %>%
 ###---------------------------------------------------------#
 cli::cli_h1("Analyse quantitative")
 
-# Tableau de synthèse temporel : observation, nombre d'espèces, année
-
+# Tableau de synthèse temporelle : observation, nombre d'espèces, année
 
 tablo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
@@ -45,7 +44,6 @@ tablo_contrib <- bdd_ecrevisse %>%
   arrange(desc(pourcentage))
 
 
-# Calcul d'indice : richesse spécifique, indice de shannon,...
 
 # Graphique nombre de saisies par année et par département
 histo_synt_saisies <- bdd_ecrevisse %>%
@@ -117,25 +115,70 @@ ggplot(histo_synt_esp) +
 
 
 # Graphique nombre de saisies par contributeurs
+ggplot(tablo_contrib,
+       aes(x = nb_saisies, y = reorder(Fournisseur, nb_saisies), fill = Fournisseur)) +
+  geom_col(color = "black") +
+  geom_text(aes(label = nb_saisies),
+            hjust = 1.2,
+            size = 3.5) +
+  scale_y_discrete(position = "right") +
+  labs(
+    x = "Nombre de saisies",
+    fill = "Fournisseurs de données"
+  ) +
+  theme_minimal()+
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme(text = element_text(size = 12),
+        legend.position = "none",
+        axis.title.y = element_blank())
 
-# Carte de répartition par nombre d'bservation
-# Cartes d'abondance/intensité graduée selon volume de données
+
+# Carte de répartition par nombre d'observation
+departements <- st_read("assets/departements.gpkg") %>%
+  select(nom_dep = NOM_DEP,
+         insee_dep = INSEE_DEP,
+         geom)
 
 
-###---------------------------------------------------------#
-cli::cli_h1("Analyse qualitative")
+esp_162666 <- bdd_ecrevisse %>%
+  filter(Cdnom == 162666) %>%
+  st_point_on_surface()
 
-# Qualité des données -> taux de validation des données
-# Identification des epsèces observées (autochtones/invasives)
-# Analyse des modes de collecte : prospection, protocole,...
+esp_162667 <- bdd_ecrevisse %>%
+  filter(Cdnom == 162667) %>%
+  st_point_on_surface()
 
-# Etude des expansions des espèces EE
-nombre individus
-# Analyse des co-occurence entre espèces
-# Identification zones sensibles ou prioritaires dans la gestion
+esp_162668 <- bdd_ecrevisse %>%
+  filter(Cdnom == 162668) %>%
+  st_point_on_surface()
 
-# Carte décrivant les types d'habitats
-# Carte montrant les enjeux : présence EEE +++
+esp_17646 <- bdd_ecrevisse %>%
+  filter(Cdnom == 17646) %>%
+  st_point_on_surface()
+
+esp_18432 <- bdd_ecrevisse %>%
+  filter(Cdnom == 18432)
+
+esp_18437 <- bdd_ecrevisse %>%
+  filter(Cdnom == 18437) %>%
+  st_point_on_surface()
+
+# Exemple d'une carte produite
+carte_esp1 <- ggplot(esp_162666) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  labs(title = "Écrevisses à pattes grêles") +
+  theme_void(base_size = 9) +
+  theme(text = element_text(size = 6),
+        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 
 
 

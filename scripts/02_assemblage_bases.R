@@ -49,6 +49,31 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
   
 
 ###---------------------------------------------------------#
+cli::cli_h1("Jointure statut EEE")
+fr_esp_envahissantes <- read.table("assets/fr_especes_envahissantes.csv", 
+                                   header = TRUE, 
+                                   sep = ";", 
+                                   fill = TRUE, 
+                                   row.name = NULL)
+
+fr_esp_envahissantes <- fr_esp_envahissantes %>%
+  select(Cdnom = CD_NOM,
+         Nom_vernaculaire = Nom.vernaculaire) %>%
+  mutate(Statut = "Envahissante",
+         Cdnom = as.character(Cdnom))
+
+
+bdd_ecrevisse <- bdd_ecrevisse %>%
+  left_join(fr_esp_envahissantes %>% 
+              select(Cdnom,
+                     Statut),
+            by = "Cdnom") %>%
+  mutate(Statut = case_when(
+    Statut == "Envahissante" ~ "Espèce envahissante",
+    Cdnom == "162666" ~ "Espèce représentée",
+    TRUE ~ "Espèce autochtone"))
+
+###---------------------------------------------------------#
 cli::cli_h1("Sauvegarder le fichier")
 
 st_write(bdd_ecrevisse, "processed_data/bdd_ecrevisse.gpkg", 

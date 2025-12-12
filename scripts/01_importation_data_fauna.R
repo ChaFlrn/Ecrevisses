@@ -33,6 +33,7 @@ cli::cli_h1("Récupérer les contributeurs et trier la base")
 data_fauna <- data_fauna %>%
   left_join(data_meta, by = c("IdJdd" = "IdJeuDonnees")) %>%
   mutate(Date = substr(DateDebut, 1,4),
+         Observateur = str_trim(str_extract(Observer, "^[^()]+")),
          Fournisseur = case_when(
            is.na(Fournisseur) ~ str_extract(Observer, "(?<=\\().+?(?=\\))"),
            TRUE ~ Fournisseur),
@@ -50,6 +51,7 @@ data_fauna <- data_fauna %>%
          Commune = NomCom,
          InseeCom,
          Fiabilite = NivValReg,
+         Observateur,
          Fournisseur,
          Geometrie = GeomWkt)
 

@@ -24,7 +24,8 @@ cli::cli_h1("Assembler et trier le fichier")
 data_oison <- data_oison %>%
   st_join(communes, join = st_nearest_feature) %>%
   mutate(Date = substr(date, 1,4),
-         Fournisseur = "OFB") %>%
+         Fournisseur = "OFB",
+         Observateur = paste(nom,prenom)) %>%
   select(Id = observation_id,
          Date,
          Cdnom = cd_nom,
@@ -38,6 +39,7 @@ data_oison <- data_oison %>%
          Commune = nom_com,
          InseeCom = insee_com,
          Fiabilite = status,
+         Observateur,
          Fournisseur,
          Geometrie = geom)
 
