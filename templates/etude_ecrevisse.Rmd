@@ -1,11 +1,13 @@
 ---
-title: "Bilan des saisies du groupe Ecrevisses - Données FAUNA et OISON"
+title: "Bilan des saisies Ecrevisses"
+subtitle: "Données FAUNA et OISON"
 author: "OFB DR Nouvelle-Aquitaine - Service régional Connaissance"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 toc-title: "Sommaire"
 output: 
   word_document:
     toc: true
+    toc_depth : 2
     reference_doc: "reference_doc.docx"
   
 ---
@@ -51,33 +53,88 @@ bdd_ecrevisse <- st_read("../processed_data/bdd_ecrevisse.gpkg")
 departements <- st_read("../assets/departements.gpkg")
 
 ```
+\newpage
 
 # Introduction
-Contexte étude et objectifs
+
+Les écrevisses constituent un élément majeur du patrimoine écologiques des milieux aquatiques continentaux. Leur présence, leur abondance et leur répartition offrent des indicateurs pertinents de l'état de conservation des habitats. Mais elles permettent également de révéler les pressions auxquelles les cours d'eau sont soumis. En Nouvelle-Aquitaine, comme dans d'autres régions, la situation des espèces autochtones s'est profondément modifiée au cours des dernières décennies sous l'effet de la dégradation des habitats, de la propagation de pathogènes tels que la peste de l'écrevisse (**Aphanomyces astaci**) et des introductions d'espèces exotiques envahissantes (**Onema**, 2016). 
+
+
+Dans ce contexte, la connaissance de la distribution des espèces d'écrevisses est une importance stratégique pour la gestion des milieux aquatiques. Elle permet d'orienter les actions de préservation, de prévenir les risques de dissémination d'espèces invasives et de suivre l'efficacité des mesures de restauration écologique (**Gherardi F.**,2011). La région Nouvelle-Aquitaine dispose d'une plateforme régionale de données issues de nombreux partenaires contributeurs (Observatoire FAUNA). L'Office français de la Biodiversité (OFB) a également sa propre base de données opportunistes (OISON). Ces outils de saisies offrent un socle solide pour l'analyse de données. 
+
+
+Ce rapport vise à produire une vision actualisée des observations d'écrevisses en Nouvelle-Aquitaine. Il s'appuie sur un travail d'agrégation, de traitement et d'analyse des données disponibles.
+L'objectif est double : d'une part, fournir un état des lieux de la répartition des différentes espèces, et d'autre part, mettre en lumière les tendances et enjeux de gestion associés. 
+
+
+Cette approche contribue à renforcer la capacité d'expertise régionale et à soutenir la prise de décision en matière de conservation et de gestion durable des milieux aquatiques. 
+
+
+# Présentation des jeux de données
+
+La base de données de travail est une jointure de deux bases distinctes :
+
+- OISON : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles.
+
+
+- Observatoire FAUNA : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. 
+
+
+Un traitement des données avant et après jointure a été réalisé tel que :
+
+- vérification des doublons : dans les 2 bases initiales des doublons ont été observés, 4 pour FAUNA et 51 pour OISON.
+
+
+- suppression données OFB : dans la base FAUNA, une grande partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Ainsi, les données OFB présentes dans FAUNA s'étendaient de 1984 à 2021. La décision fut de ne garder que les données OISON antérieures à 1984 et postérieures à 2021, en faisant le postulat que celles entre ces dates sont déjà remontées dans FAUNA.
+
+
+Par ailleurs, l'OFB fait partie des plus gros contributeur en nombre de saisies dans la base FAUNA alors que la base initiale OISON est peu fournie. Cela pourrait s'expliquer par l'extraction de OISON qui ne comporte que des données ayant une géométrie géographique de type "point" alors que dans la base de données FAUNA il y a des "lignes" et "polygones". 
+
+```{r, fig.width = 6, fig.height = 4}
+tablo_data <- data.frame(
+  Base = c("OISON", "FAUNA", "Finale"),
+  Donnees_brutes = c(3618,40370,43933),
+  Donnees_traitees = c(3567,40366,40460),
+  stringsAsFactors = FALSE)
+
+# Créer tableau pour rapport
+tablo_data <- tablo_data %>%
+  mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
+
+flextable(tablo_data) %>%
+  set_header_labels(
+    Base = "Base de données",
+    Donnees_brutes = "Données brutes",
+    Donnees_traitees = "Données traitées") %>%
+  theme_vanilla() %>%
+  color(part = "header", color = "white") %>%
+  bg(part = "header", bg = "#333333") %>%
+  bold(part = "header") %>% 
+  align(j = colnames(tablo_data), align = "center", part = "all") %>%   
+  autofit()
+
+```
+
+
+Dans la suite de ce rapport, il faut distinguer deux variables : le nombre de saisies et le nombre d'individus. En effet, le nombre de saisies correspond au nombre de lignes présentes dans la base de données. Alors que le nombre d'individus est un dénombrement des animaux lors de leur observation. Dans ce cas, une ligne n'est pas forcément égale à un individu. 
+Le problème étant que de nombreuses lignes n'ont pas leur variable "effectif" de renseignée, ce qui rend complexe les analyses liées au dénombrement. 
 
 
 
-# Présentation du jeu de données
-Origine et nature de la donnée
-Variables disponibles
-
-Description du volume de données
-
-Vérifications préliminaires : doublons
-
+\newpage
 
 # Analyse quantitative
-## Analyse descriptive
+## Analyses descriptives
 
-Répartition des espèces saisies dans la base de données.
+Le tableau ci-dessous recense le nombre de saisies (nombre de lignes) pour chaque espèce présente dans la base de données.  
 
-```{r}
+```{r, fig.width = 6, fig.height = 4}
 tablo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Cdnom, Nom_vernaculaire) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
   mutate(total = sum(nb_saisies),
-         pourcentage = round((nb_saisies / total)*100,2)) %>%
+         pourcentage = round((nb_saisies / total)*100,3)) %>%
   select(-total, 
          -Cdnom) %>%
   arrange(desc(pourcentage))
@@ -85,7 +142,6 @@ tablo_synt_esp <- bdd_ecrevisse %>%
 # Créer tableau pour rapport
 tablo_synt_esp <- tablo_synt_esp %>%
   mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
-cols_numeric <- which(sapply(tablo_synt_esp, is.numeric))
 
 flextable(tablo_synt_esp) %>%
   set_header_labels(
@@ -96,21 +152,21 @@ flextable(tablo_synt_esp) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = cols_numeric, align = "center", part = "body") %>%   # Aligner à droite les colonnes de saisies
-  align(j = cols_numeric, align = "center", part = "header") %>% 
+  align(j = colnames(tablo_synt_esp), align = "center", part = "all") %>%   
   autofit()
 ```
 
 
-Répartition des contributeurs dans la base de données. 
 
-```{r}
+Le tableau ci-dessous présente la répartition des producteurs de données, en nombre de saisies ainsi qu'en pourcentage de contribution à la base.
+
+```{r, fig.width = 6, fig.height = 4}
 tablo_contrib <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Fournisseur) %>%
   summarise(nb_saisies = n()) %>%
   mutate(total = sum(nb_saisies),
-         pourcentage = round((nb_saisies / total)*100,2)) %>%
+         pourcentage = round((nb_saisies / total)*100,3)) %>%
   select(- total) %>%
   arrange(desc(pourcentage))
 
@@ -118,7 +174,6 @@ tablo_contrib <- bdd_ecrevisse %>%
 # Créer tableau pour rapport
 tablo_contrib <- tablo_contrib %>%
   mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
-cols_numeric <- which(sapply(tablo_contrib, is.numeric))
 
 flextable(tablo_contrib) %>%
   set_header_labels(
@@ -129,18 +184,19 @@ flextable(tablo_contrib) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = cols_numeric, align = "center", part = "body") %>%   # Aligner à droite les colonnes de saisies
-  align(j = cols_numeric, align = "center", part = "header") %>% 
+  align(j = colnames(tablo_contrib), align = "center", part = "all") %>% 
   autofit()
 ```
 
 
 \newpage
 
-## Analyse temporelle
-Evolution du nombre de saisies de l'OFB par rapport au total annuel
-%%% Faire paramétrages du graphiques
-```{r}
+## Analyses temporelles
+
+Le premier graphique ci-dessous illustre l'évolution du nombre de saisies de l'OFB par rapport au total annuel de la base de données (jointure de la base FAUNA et OISON). Le deuxième graphique représente l'évolution des saisies des différentes espèces d'écrevisses depuis 1950.
+
+
+```{r, fig.width = 18, fig.height = 10}
 histo_synt_saisies <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Date) %>%
@@ -170,16 +226,17 @@ ggplot() +
     y = "Nombre de saisies",
     fill = "",
     color = "") +
-  theme_minimal(base_size = 14) +
   theme(
-    axis.text.x = element_text(angle = 90, hjust = 1),
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    legend.title = element_blank()
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 12)
   )
 ```
-Représentation sous forme de graphique en fonction des années
-%%% Faire paramétrages du graphiques
-```{r}
+
+
+```{r, fig.width = 18, fig.height = 8}
 histo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   mutate(Date = as.numeric(Date)) %>%
@@ -202,25 +259,20 @@ ggplot(histo_synt_esp) +
                      name = "Espèces") +
   scale_y_continuous(breaks = seq(0, max(histo_synt_esp$nb_saisies), by = 50)) +
   scale_x_continuous(breaks = seq(min(histo_synt_esp$Date), max(histo_synt_esp$Date), by = 5)) +
-  theme_minimal(base_size = 14)+
-  theme(text = element_text(size = 9),
-        axis.text.x = element_text(angle = 90, hjust = 1),
-        legend.position = "bottom",
-        legend.title = element_text(face = "bold"),
-        plot.title = element_text(face = "bold", hjust = 0.5))
+  theme(
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    legend.position = "bottom")
 ```
 
-
+\newpage
 
 ## Analyses spatiales
 
 ```{r}
-departements <- st_read("assets/departements.gpkg") %>%
-  select(nom_dep = NOM_DEP,
-         insee_dep = INSEE_DEP,
-         geom)
-
-
 esp_162666 <- bdd_ecrevisse %>%
   filter(Cdnom == 162666) %>%
   st_point_on_surface()
@@ -255,9 +307,9 @@ carte_esp1 <- ggplot(esp_162666) +
           shape = 21) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses à pattes grêles") +
-  theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme_void(base_size = 14) +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 
@@ -272,8 +324,8 @@ carte_esp2 <- ggplot(esp_162667) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses de Californie") +
   theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_esp3 <- ggplot(esp_162668) +
@@ -287,8 +339,8 @@ carte_esp3 <- ggplot(esp_162668) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses de Louisiane") +
   theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_esp4 <- ggplot(esp_17646) +
@@ -302,8 +354,8 @@ carte_esp4 <- ggplot(esp_17646) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses américaines") +
   theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_esp5 <- ggplot(esp_18432) +
@@ -317,8 +369,8 @@ carte_esp5 <- ggplot(esp_18432) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses à pattes rouges") +
   theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_esp6 <- ggplot(esp_18437) +
@@ -332,30 +384,26 @@ carte_esp6 <- ggplot(esp_18437) +
   scale_fill_manual(values = colors_esp) +
   labs(title = "Écrevisses à pieds blancs") +
   theme_void(base_size = 9) +
-  theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 ```
 
-Carte de distribution par espèces.
-%%% Faire paramétrages de la carte
-```{r}
+Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquitaine. Les dynamiques de populations seront étudiées plus tard dans le rapport.
+
+
+```{r, fig.width = 15, fig.height = 15}
 # Faire un seul graphique avec les 6 cartes
-(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4) +
-  plot_annotation(
-    title = "Répartition des observations régionales des écrevisses",,
-    theme = theme(
-      plot.title = element_text(size = 10),
-      plot.subtitle = element_text(size = 8)
-    ))
+(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
 ```
+
 \newpage
 
 # Analyse qualitative
 ## Qualité de la donnée
-Regard sur la fiabilité des données et leur statut de validation.
+Il est important de s'interroger sur la qualité et la fiabilité des données. L'ensemble des analyses ont été réalisées sans aucun filtre de fiabilité. Une réflexion sur les statuts serait à mener pour définir ceux qui ne sont pas à considérer lors d'études de données.
 
-```{r}
+```{r, fig.width = 6, fig.height = 4}
 data_valid <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Fiabilite) %>%
@@ -366,7 +414,6 @@ data_valid <- bdd_ecrevisse %>%
 # Créer tableau pour rapport
 data_valid <- data_valid %>%
   mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
-cols_numeric <- which(sapply(data_valid, is.numeric))
 
 flextable(data_valid) %>%
   set_header_labels(
@@ -377,8 +424,7 @@ flextable(data_valid) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = cols_numeric, align = "center", part = "body") %>%   # Aligner à droite les colonnes de saisies
-  align(j = cols_numeric, align = "center", part = "header") %>% 
+  align(j = colnames(data_valid), align = "center", part = "all") %>%
   autofit()
 
 ```
@@ -386,10 +432,17 @@ flextable(data_valid) %>%
 
 
 ## Caractérisation des espèces
-Proportions des espèces dites autochtones et celles EEE
-%%% Mettre en forme le tableau
+Le tableau ci-dessous décrit la répartition des saisies des espèces en fonction de leur statut : 
 
-```{r}
+- espèce envahissante : espèce introduite se développant hors de son aire de répartition naturelle. Leur implantation et propagation menacent les écosystèmes, les habitats ou les espèces autochtones.
+
+
+- espèce autochtone : espèce présente naturellement et de manière pérenne à l'intérieur d'un territoire, sa population est en place dans l'écosystème.
+
+
+- espèce représentée : espèce introduite en France mais intégrée à la faune française, non considérée en tant qu'espèce envahissante.
+
+```{r, fig.width = 6, fig.height = 4}
 carac_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Statut) %>%
@@ -401,7 +454,6 @@ carac_esp <- bdd_ecrevisse %>%
 # Créer tableau pour rapport
 carac_esp <- carac_esp %>%
   mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
-cols_numeric <- which(sapply(carac_esp, is.numeric))
 
 flextable(carac_esp) %>%
   set_header_labels(
@@ -412,58 +464,60 @@ flextable(carac_esp) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = cols_numeric, align = "center", part = "body") %>%   # Aligner à droite les colonnes de saisies
-  align(j = cols_numeric, align = "center", part = "header") %>% 
+  align(j = colnames(carac_esp), align = "center", part = "all") %>%
   autofit()
 ```
 
+Le tableau ci-dessous cumule les données de dénombrement par espèce, en fonction des trois périodes temporelles.
 
-Evolution des espèces
-```{r}
-carac_esp_spe <- bdd_ecrevisse %>%
+Ici, ce sont bien les données d'effectifs qui sont analysées, certaines espèces n'ont aucune information sur le nombre d'individus présents lors de la saisie, elles ne ressortent donc pas dans le tableau. 
+
+Cela met en lumière l'importance de la qualité de la donnée, un non-remplissage de la colonne "effectif" est-il signe d'une absence de l'espèce ? 
+
+
+```{r, fig.width = 6, fig.height = 4}
+bdd_effectif <- bdd_ecrevisse %>%
+  mutate(Observations = as.numeric(Effectif)) %>%
+  filter(!is.na(Observations))
+
+carac_esp_spe <- bdd_effectif %>%
   st_set_geometry(NULL) %>%
   mutate(Periode = case_when(
     Date <= "2005" ~ "2005",
     Date > "2005" & Date <= "2015" ~ "2005_2015",
-    Date > "2015" ~ "2015")) %>%
+    Date > "2015" ~ "2025")) %>%
   group_by(Nom_vernaculaire, Periode) %>%
-  summarise(nb = n(), .groups = "drop") %>%
+  summarise(nb = sum(Observations), .groups = "drop") %>%
   tidyr::pivot_wider(
     names_from = Periode,
     values_from = nb,
     values_fill = 0,
-    names_prefix = "nb_obs_"
-  ) %>%
-  mutate(pourc_2005_2015 = round((nb_obs_2005_2015 - nb_obs_2005) / (nb_obs_2005_2015 + nb_obs_2005) *100,2),
-         pourc_2015_2025 = round((nb_obs_2015 - nb_obs_2005_2015) / (nb_obs_2015 + nb_obs_2005_2015) *100,2))
+    names_prefix = "nb_obs_")
 
 
 # Créer tableau pour rapport
 carac_esp_spe <- carac_esp_spe %>%
-  mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
-cols_numeric <- which(sapply(carac_esp_spe, is.numeric))
+  mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE))) %>%
+  select(-nb_obs_2025, nb_obs_2025)
 
 flextable(carac_esp_spe) %>%
   set_header_labels(
     Nom_vernaculaire = "Espèce",
-    nb_obs_2005 = "Observations avant 2005",
-    nb_obs_2005_2015 = "Observations entre 2005 et 2015",
-    nb_obs_2015 = "Observations après 2015",
-    pourc_2005_2015 = "Evolution entre 2005 et 2015",
-    pourc_2015_2025 = "Evolution entre 2015 et 2025") %>%
+    nb_obs_2005 = "Observations \navant 2005",
+    nb_obs_2005_2015 = "Observations \nentre 2005 et 2015",
+    nb_obs_2025 = "Observations \naprès 2015") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = cols_numeric, align = "center", part = "body") %>%   # Aligner à droite les colonnes de saisies
-  align(j = cols_numeric, align = "center", part = "header") %>% 
+  align(j = colnames(carac_esp_spe), align = "center", part = "all") %>%
   autofit()
 ```
 
-
+\newpage
 
 ## Analyse des dynamiques écologiques
-
+### Par statut d'espèces
 ```{r}
 colors_statut <- c(
   "Espèce envahissante" = "#e67e22",
@@ -493,9 +547,9 @@ carte_eee_2005 <- ggplot(pop_eee_2005) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "Avant 2005") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+        plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_eee_2015 <- ggplot(pop_eee_2015) +
@@ -508,9 +562,9 @@ carte_eee_2015 <- ggplot(pop_eee_2015) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "De 2005 à 2015") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+        plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_eee_2025 <- ggplot(pop_eee_2025) +
@@ -523,25 +577,27 @@ carte_eee_2025 <- ggplot(pop_eee_2025) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "Depuis 2015") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
-        legend.position = "right")
+        plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+        legend.position = "right", 
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
 ```
 
 
 ```{r}
 pop_aut_2005 <- bdd_ecrevisse %>%
-  filter(Date <= "2005" & Statut != "Espèce envahissante") %>%
+  filter(Date <= "2005" & Statut == "Espèce autochtone") %>%
   st_point_on_surface()
 
 pop_aut_2015 <- bdd_ecrevisse %>%
-  filter(Date > "2005" & Date <= "2015" & Statut != "Espèce envahissante") %>%
+  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce autochtone") %>%
   st_point_on_surface()
 
 pop_aut_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Statut != "Espèce envahissante") %>%
+  filter(Date > "2015" & Statut == "Espèce autochtone") %>%
   st_point_on_surface()
 
 carte_aut_2005 <- ggplot(pop_aut_2005) +
@@ -554,9 +610,9 @@ carte_aut_2005 <- ggplot(pop_aut_2005) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "Avant 2005") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_aut_2015 <- ggplot(pop_aut_2015) +
@@ -569,9 +625,9 @@ carte_aut_2015 <- ggplot(pop_aut_2015) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "De 2005 à 2015") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
 carte_aut_2025 <- ggplot(pop_aut_2025) +
@@ -584,49 +640,474 @@ carte_aut_2025 <- ggplot(pop_aut_2025) +
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
   labs(title = "Depuis 2015") +
-  theme_void(base_size = 9) +
+  theme_void() +
   theme(text = element_text(size = 6),
-        plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
-        legend.position = "right")
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 ```
 
-Cartogrpahie de l'évolution du nombre de saisies des espèces autochtones (et écrevisses à pattes grêles) et des espèces envahissantes selon trois périodes temporelles :
-
-- Avant 2005
-
-
-- Entre 2005 et 2015
-
-
-- Depuis 2015
-
 ```{r}
+pop_rep_2005 <- bdd_ecrevisse %>%
+  filter(Date <= "2005" & Statut == "Espèce représentée") %>%
+  st_point_on_surface()
+
+pop_rep_2015 <- bdd_ecrevisse %>%
+  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce représentée") %>%
+  st_point_on_surface()
+
+pop_rep_2025 <- bdd_ecrevisse %>%
+  filter(Date > "2015" & Statut == "Espèce représentée") %>%
+  st_point_on_surface()
+
+carte_rep_2005 <- ggplot(pop_rep_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "Avant 2005") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_rep_2015 <- ggplot(pop_rep_2015) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "De 2005 à 2015") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_rep_2025 <- ggplot(pop_rep_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "Depuis 2015") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+```
+
+
+
+
+Cartographie de l'évolution du nombre de saisies des espèces autochtones, des espèces représentées (écrevisses à pattes grêles) et des espèces envahissantes selon les trois périodes temporelles.
+
+```{r, fig.width = 18, fig.height = 18}
 # Assemblage des cartes
 cartes_eee <- (carte_eee_2005 | carte_eee_2015 | carte_eee_2025) +
   plot_annotation(
-    title = "Evolution du nombre d'observations des populations d'écrevisses envahissantes",
-    subtitle = "Écrevisse de Californie, Écrevisse de Lousiane, Écrevisse américaine",
     theme = theme(
-      plot.title = element_text(size = 10),
+      plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
 cartes_aut <- (carte_aut_2005 | carte_aut_2015 | carte_aut_2025) +
   plot_annotation(
-    title = "Evolution du nombre d'observations des populations d'écrevisses autochtones et représentées",
-    subtitle = "Écrevisse à pattes rouges, Écrevisse à pieds blancs, Écrevisse à pattes grêles",
     theme = theme(
-      plot.title = element_text(size = 10),
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
+cartes_rep <- (carte_rep_2005 | carte_rep_2015 | carte_rep_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
+(cartes_aut / cartes_rep / cartes_eee) 
+
+```
+
+\newpage
+
+### Par espèces
+
+```{r}
+breaks_fixed <- c(0, 1, 5, 20, 50, 100, 200)
+labels_fixed <- breaks_fixed
+max_eff <- max(breaks_fixed)
+
+
+pop_18437_2005 <- bdd_effectif %>%
+  filter(Date <= "2005" & Cdnom == "18437") %>%
+  st_point_on_surface()
+
+pop_18437_2015 <- bdd_effectif %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "18437") %>%
+  st_point_on_surface()
+
+pop_18437_2025 <- bdd_effectif %>%
+  filter(Date > "2015" & Cdnom == "18437") %>%
+  st_point_on_surface()
+
+
+carte_18437_2005 <- ggplot(pop_18437_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Avant 2005",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_18437_2015 <- ggplot(pop_18437_2015) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2005 à 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_18437_2025 <- ggplot(pop_18437_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Depuis 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+```
+
+```{r}
+pop_17646_2005 <- bdd_effectif %>%
+  filter(Date <= "2005" & Cdnom == "17646") %>%
+  st_point_on_surface()
+
+pop_17646_2015 <- bdd_effectif %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "17646") %>%
+  st_point_on_surface()
+
+pop_17646_2025 <- bdd_effectif %>%
+  filter(Date > "2015" & Cdnom == "17646") %>%
+  st_point_on_surface()
+
+
+carte_17646_2005 <- ggplot(pop_17646_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Avant 2005",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_17646_2015 <- ggplot(pop_17646_2015) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2005 à 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_17646_2025 <- ggplot(pop_17646_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Depuis 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+```
+
+```{r}
+pop_162667_2005 <- bdd_effectif %>%
+  filter(Date <= "2005" & Cdnom == "162667") %>%
+  st_point_on_surface()
+
+pop_162667_2015 <- bdd_effectif %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162667") %>%
+  st_point_on_surface()
+
+pop_162667_2025 <- bdd_effectif %>%
+  filter(Date > "2015" & Cdnom == "162667") %>%
+  st_point_on_surface()
+
+
+carte_162667_2005 <- ggplot(pop_162667_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Avant 2005",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162667_2015 <- ggplot(pop_162667_2015) +
+ geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2005 à 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162667_2025 <- ggplot(pop_162667_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Depuis 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+```
+
+```{r}
+pop_162668_2005 <- bdd_effectif %>%
+  filter(Date <= "2005" & Cdnom == "162668") %>%
+  st_point_on_surface()
+
+pop_162668_2015 <- bdd_effectif %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162668") %>%
+  st_point_on_surface()
+
+pop_162668_2025 <- bdd_effectif %>%
+  filter(Date > "2015" & Cdnom == "162668") %>%
+  st_point_on_surface()
+
+
+carte_162668_2005 <- ggplot(pop_162668_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Avant 2005",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162668_2015 <- ggplot(pop_162668_2015) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2005 à 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162668_2025 <- ggplot(pop_162668_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Depuis 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+```
+
+Cartographie par espèce, du nombre d'individus observés selon les trois mêmes périodes temporelles. Toutes les espèces ne sont pas représentées car seulement quatre d'entre elles ont des données de dénombrement des individus.
+Le rayonnement du cercle est proportionnel au nombre d'individus recensés sur le point géographique concerné.
+
+```{r, fig.width = 18, fig.height = 18}
+# Assemblage des cartes
+cartes_18437 <- (carte_18437_2005 | carte_18437_2015 | carte_18437_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
+cartes_17646 <- (carte_17646_2005 | carte_17646_2015 | carte_17646_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
+cartes_162667 <- (carte_162667_2005 | carte_162667_2015 | carte_162667_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
+cartes_162668 <- (carte_162668_2005 | carte_162668_2015 | carte_162668_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
 
-(cartes_aut / cartes_eee) 
+cartes_18437 / cartes_17646
 
 ```
 
-## Description des habitats
+```{r, fig.width = 18, fig.height = 18}
+cartes_162667 / cartes_162668
+```
+\newpage
+
+# Bibliographie
+
+- Gherardi, F. (2011). **Towards a sustainable human–crayfish interaction? Crustacean Biology**, 31(2), 258-267
 
 
-
-
+- Onema, (2016). **Enquête nationale sur les écrevisses**

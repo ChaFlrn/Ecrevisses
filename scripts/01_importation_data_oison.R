@@ -25,7 +25,8 @@ data_oison <- data_oison %>%
   st_join(communes, join = st_nearest_feature) %>%
   mutate(Date = substr(date, 1,4),
          Fournisseur = "OFB",
-         Observateur = paste(nom,prenom)) %>%
+         Observateur = paste(nom,prenom),
+         Effectif = ifelse(is.na(nombre_individu), "Non renseigné", nombre_individu)) %>%
   select(Id = observation_id,
          Date,
          Cdnom = cd_nom,
@@ -34,7 +35,8 @@ data_oison <- data_oison %>%
          Classe = classe,
          Ordre = ordre,
          Famille = famille,
-         Effectif = nombre_individu,
+         Effectif,
+         Presence = presence,
          Departement = insee_dep,
          Commune = nom_com,
          InseeCom = insee_com,

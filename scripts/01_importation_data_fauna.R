@@ -37,7 +37,10 @@ data_fauna <- data_fauna %>%
          Fournisseur = case_when(
            is.na(Fournisseur) ~ str_extract(Observer, "(?<=\\().+?(?=\\))"),
            TRUE ~ Fournisseur),
-         Effectif = (DenbrMin + DenbrMax)/2) %>%
+         Effectif = coalesce(
+           as.character(DenbrMax),
+           as.character(DenbrMin),
+           "Non renseigné")) %>%
   select(Id = IdRegional,
          Date,
          Cdnom = CdNomCite,
@@ -47,6 +50,7 @@ data_fauna <- data_fauna %>%
          Ordre,
          Famille,
          Effectif,
+         Presence = StatPresen,
          Departement = CodeDpt,
          Commune = NomCom,
          InseeCom,
