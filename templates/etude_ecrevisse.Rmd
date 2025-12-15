@@ -40,7 +40,7 @@ colors_esp <- c(
   "Ecrevisse a pieds blancs" = "#4895EF",
   "Ecrevisse de Californie" = "#E67E22",
   "Ecrevisse de Louisiane" = "#E41A1C",
-  "Ecrevisse americaine" = "#B03A2E"
+  "Ecrevisse americaine" = "#67000D"
 )
 
 colors_statut <- c(
@@ -57,7 +57,7 @@ departements <- st_read("../assets/departements.gpkg")
 
 # Introduction
 
-Les écrevisses constituent un élément majeur du patrimoine écologiques des milieux aquatiques continentaux. Leur présence, leur abondance et leur répartition offrent des indicateurs pertinents de l'état de conservation des habitats. Mais elles permettent également de révéler les pressions auxquelles les cours d'eau sont soumis. En Nouvelle-Aquitaine, comme dans d'autres régions, la situation des espèces autochtones s'est profondément modifiée au cours des dernières décennies sous l'effet de la dégradation des habitats, de la propagation de pathogènes tels que la peste de l'écrevisse (**Aphanomyces astaci**) et des introductions d'espèces exotiques envahissantes (**Onema**, 2016). 
+Les écrevisses constituent un élément majeur du patrimoine écologiques des milieux aquatiques continentaux. Leur présence, leur abondance et leur répartition offrent des indicateurs pertinents de l'état de conservation des habitats. Mais elles permettent également de révéler les pressions auxquelles les cours d'eau sont soumis. En Nouvelle-Aquitaine, comme dans d'autres régions, la situation des espèces autochtones s'est profondément modifiée au cours des dernières décennies sous l'effet de la dégradation des habitats, de la propagation de pathogènes tels que la peste de l'écrevisse (*Aphanomyces astaci*) et des introductions d'espèces exotiques envahissantes (**Onema**, 2016). 
 
 
 Dans ce contexte, la connaissance de la distribution des espèces d'écrevisses est une importance stratégique pour la gestion des milieux aquatiques. Elle permet d'orienter les actions de préservation, de prévenir les risques de dissémination d'espèces invasives et de suivre l'efficacité des mesures de restauration écologique (**Gherardi F.**,2011). La région Nouvelle-Aquitaine dispose d'une plateforme régionale de données issues de nombreux partenaires contributeurs (Observatoire FAUNA). L'Office français de la Biodiversité (OFB) a également sa propre base de données opportunistes (OISON). Ces outils de saisies offrent un socle solide pour l'analyse de données. 
@@ -74,18 +74,18 @@ Cette approche contribue à renforcer la capacité d'expertise régionale et à 
 
 La base de données de travail est une jointure de deux bases distinctes :
 
-- OISON : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles.
+- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles.
 
 
-- Observatoire FAUNA : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. 
+- **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. 
 
 
 Un traitement des données avant et après jointure a été réalisé tel que :
 
-- vérification des doublons : dans les 2 bases initiales des doublons ont été observés, 4 pour FAUNA et 51 pour OISON.
+- Vérification des doublons : dans les deux bases initiales des doublons ont été observés, 4 pour FAUNA et 51 pour OISON.
 
 
-- suppression données OFB : dans la base FAUNA, une grande partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Ainsi, les données OFB présentes dans FAUNA s'étendaient de 1984 à 2021. La décision fut de ne garder que les données OISON antérieures à 1984 et postérieures à 2021, en faisant le postulat que celles entre ces dates sont déjà remontées dans FAUNA.
+- Suppression données OFB : dans la base FAUNA, une grande partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Ainsi, les données OFB présentes dans FAUNA s'étendaient de 1984 à 2021. La décision fut de ne garder que les données OISON antérieures à 1984 et postérieures à 2021, en faisant le postulat que celles entre ces dates sont déjà remontées dans FAUNA.
 
 
 Par ailleurs, l'OFB fait partie des plus gros contributeur en nombre de saisies dans la base FAUNA alors que la base initiale OISON est peu fournie. Cela pourrait s'expliquer par l'extraction de OISON qui ne comporte que des données ayant une géométrie géographique de type "point" alors que dans la base de données FAUNA il y a des "lignes" et "polygones". 
@@ -116,7 +116,7 @@ flextable(tablo_data) %>%
 ```
 
 
-Dans la suite de ce rapport, il faut distinguer deux variables : le nombre de saisies et le nombre d'individus. En effet, le nombre de saisies correspond au nombre de lignes présentes dans la base de données. Alors que le nombre d'individus est un dénombrement des animaux lors de leur observation. Dans ce cas, une ligne n'est pas forcément égale à un individu. 
+Dans la suite de ce rapport, il faut distinguer deux variables : le **nombre de saisies** et le **nombre d'individus**. En effet, le nombre de saisies correspond au nombre de lignes présentes dans la base de données. Alors que le nombre d'individus est un dénombrement des animaux lors de leur observation. Dans ce cas, une ligne n'est pas forcément égale à un individu. 
 Le problème étant que de nombreuses lignes n'ont pas leur variable "effectif" de renseignée, ce qui rend complexe les analyses liées au dénombrement. 
 
 
@@ -131,7 +131,7 @@ Le tableau ci-dessous recense le nombre de saisies (nombre de lignes) pour chaqu
 ```{r, fig.width = 6, fig.height = 4}
 tablo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
-  group_by(Cdnom, Nom_vernaculaire) %>%
+  group_by(Cdnom, Nom_vernaculaire, Nom_scientifique) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
   mutate(total = sum(nb_saisies),
          pourcentage = round((nb_saisies / total)*100,3)) %>%
@@ -146,13 +146,16 @@ tablo_synt_esp <- tablo_synt_esp %>%
 flextable(tablo_synt_esp) %>%
   set_header_labels(
     Nom_vernaculaire = "Espèce",
+    Nom_scientifique = "Nom scientifique",
     nb_saisies = "Nombre de saisies",
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = colnames(tablo_synt_esp), align = "center", part = "all") %>%   
+  align(j = colnames(tablo_synt_esp), align = "center", part = "all") %>% 
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
   autofit()
 ```
 
@@ -185,6 +188,8 @@ flextable(tablo_contrib) %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_contrib), align = "center", part = "all") %>% 
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
   autofit()
 ```
 
@@ -196,7 +201,7 @@ flextable(tablo_contrib) %>%
 Le premier graphique ci-dessous illustre l'évolution du nombre de saisies de l'OFB par rapport au total annuel de la base de données (jointure de la base FAUNA et OISON). Le deuxième graphique représente l'évolution des saisies des différentes espèces d'écrevisses depuis 1950.
 
 
-```{r, fig.width = 18, fig.height = 10}
+```{r, fig.width = 18, fig.height = 9}
 histo_synt_saisies <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   group_by(Date) %>%
@@ -236,7 +241,7 @@ ggplot() +
 ```
 
 
-```{r, fig.width = 18, fig.height = 8}
+```{r, fig.width = 18, fig.height = 9}
 histo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   mutate(Date = as.numeric(Date)) %>%
@@ -424,7 +429,9 @@ flextable(data_valid) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = colnames(data_valid), align = "center", part = "all") %>%
+  align(j = colnames(data_valid), align = "center", part = "all") %>%  
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
   autofit()
 
 ```
@@ -434,13 +441,13 @@ flextable(data_valid) %>%
 ## Caractérisation des espèces
 Le tableau ci-dessous décrit la répartition des saisies des espèces en fonction de leur statut : 
 
-- espèce envahissante : espèce introduite se développant hors de son aire de répartition naturelle. Leur implantation et propagation menacent les écosystèmes, les habitats ou les espèces autochtones.
+- Espèce envahissante : espèce introduite se développant hors de son aire de répartition naturelle. Leur implantation et propagation menacent les écosystèmes, les habitats et/ou les espèces autochtones.
 
 
-- espèce autochtone : espèce présente naturellement et de manière pérenne à l'intérieur d'un territoire, sa population est en place dans l'écosystème.
+- Espèce autochtone : espèce présente naturellement et de manière pérenne à l'intérieur d'un territoire, sa population est en place dans l'écosystème.
 
 
-- espèce représentée : espèce introduite en France mais intégrée à la faune française, non considérée en tant qu'espèce envahissante.
+- Espèce représentée : espèce introduite en France mais intégrée à la faune française, non considérée en tant qu'espèce envahissante.
 
 ```{r, fig.width = 6, fig.height = 4}
 carac_esp <- bdd_ecrevisse %>%
@@ -464,13 +471,15 @@ flextable(carac_esp) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = colnames(carac_esp), align = "center", part = "all") %>%
+  align(j = colnames(carac_esp), align = "center", part = "all") %>%  
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
   autofit()
 ```
 
 Le tableau ci-dessous cumule les données de dénombrement par espèce, en fonction des trois périodes temporelles.
 
-Ici, ce sont bien les données d'effectifs qui sont analysées, certaines espèces n'ont aucune information sur le nombre d'individus présents lors de la saisie, elles ne ressortent donc pas dans le tableau. 
+Ici, ce sont bien les **données d'effectifs** qui sont analysées, certaines espèces n'ont aucune information sur le nombre d'individus présents lors de la saisie, elles ne ressortent donc pas dans le tableau. 
 
 Cela met en lumière l'importance de la qualité de la donnée, un non-remplissage de la colonne "effectif" est-il signe d'une absence de l'espèce ? 
 
@@ -510,7 +519,9 @@ flextable(carac_esp_spe) %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
-  align(j = colnames(carac_esp_spe), align = "center", part = "all") %>%
+  align(j = colnames(carac_esp_spe), align = "center", part = "all") %>%  
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
   autofit()
 ```
 
@@ -712,7 +723,7 @@ carte_rep_2025 <- ggplot(pop_rep_2025) +
 
 
 
-Cartographie de l'évolution du nombre de saisies des espèces autochtones, des espèces représentées (écrevisses à pattes grêles) et des espèces envahissantes selon les trois périodes temporelles.
+Cartographie de l'évolution du **nombre de saisies** des espèces autochtones, des espèces représentées (écrevisses à pattes grêles) et des espèces envahissantes selon les trois périodes temporelles.
 
 ```{r, fig.width = 18, fig.height = 18}
 # Assemblage des cartes
@@ -1062,7 +1073,7 @@ carte_162668_2025 <- ggplot(pop_162668_2025) +
 
 ```
 
-Cartographie par espèce, du nombre d'individus observés selon les trois mêmes périodes temporelles. Toutes les espèces ne sont pas représentées car seulement quatre d'entre elles ont des données de dénombrement des individus.
+Cartographie par espèce, du **nombre d'individus** observés selon les trois mêmes périodes temporelles. Toutes les espèces ne sont pas représentées car seulement quatre d'entre elles ont des données de dénombrement des individus.
 Le rayonnement du cercle est proportionnel au nombre d'individus recensés sur le point géographique concerné.
 
 ```{r, fig.width = 18, fig.height = 18}
@@ -1103,11 +1114,12 @@ cartes_18437 / cartes_17646
 ```{r, fig.width = 18, fig.height = 18}
 cartes_162667 / cartes_162668
 ```
+
 \newpage
 
 # Bibliographie
 
-- Gherardi, F. (2011). **Towards a sustainable human–crayfish interaction? Crustacean Biology**, 31(2), 258-267
+- **Gherardi F.**, (2011). *Towards a sustainable human–crayfish interaction? Crustacean Biology*, 31(2), 258-267
 
 
-- Onema, (2016). **Enquête nationale sur les écrevisses**
+- **Onema**, (2016). *Enquête nationale sur les écrevisses*
