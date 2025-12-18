@@ -11,12 +11,20 @@ data_fauna <- st_read("processed_data/data_fauna.gpkg")
 ###---------------------------------------------------------#
 cli::cli_h1("Supprimer les doublons OFB") 
 
-# Vérifier dans la base FAUNA la date des dernières remontées de données OFB
-# Supprimer ces données dans le fichier OISON pour éviter les doublons
+oison <- data_oison %>%
+  mutate(geom_wkt = st_as_text(geom)) %>%
+  st_set_geometry(NULL) %>%
+  as.data.frame()
 
-data_oison <- data_oison %>%
-  filter(Date < 1984 | Date > 2021)
+fauna <- data_fauna %>%
+  mutate(geom_wkt = st_as_text(geom)) %>% 
+  st_set_geometry(NULL) %>%
+  as.data.frame()
 
+data_doublons <- fauna %>%
+  inner_join(oison,
+             by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
+  mutate(doublon = "oui")
 
 ###---------------------------------------------------------#
 cli::cli_h1("Assembler les bases")
@@ -28,23 +36,31 @@ bdd_ecrevisse <- rbind(data_oison,
 cli::cli_h1("Nettoyage du fichier")
 
 bdd_ecrevisse <- bdd_ecrevisse %>%
+  left_join(data_doublons %>% 
+              select(Id.x, doublon),
+            by = c("Id" = "Id.x")) %>%
+  filter(is.na(doublon) | doublon != "oui") %>%
+  select(-doublon) %>%
   mutate(Cdnom = recode(Cdnom,
                         "983403" = "162666",
                         "853999" = "17646"),
          
          Nom_vernaculaire = case_when(
-    Cdnom == "162666" ~ "Ecrevisse a pattes greles",
-    Cdnom == "162667" ~ "Ecrevisse de Californie",
-    Cdnom == "162668" ~ "Ecrevisse de Louisiane",
-    Cdnom == "17646" ~ "Ecrevisse americaine",
-    Cdnom == "18432" ~ "Ecrevisse a pattes rouges",
-    Cdnom == "18437" ~ "Ecrevisse a pieds blancs"),
-    
-        Fournisseur = recode(Fournisseur,
-                             "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB" = "OFB",
-                             "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB" = "OFB",
-                             "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE OCCITANIE (OFB" = "OFB"),
-        Nom_scientifique = str_remove(Nom_scientifique, "\\s*\\([^\\)]*\\)")) %>%
+           Cdnom == "162666" ~ "Ecrevisse a pattes greles",
+           Cdnom == "162667" ~ "Ecrevisse de Californie",
+           Cdnom == "162668" ~ "Ecrevisse de Louisiane",
+           Cdnom == "17646" ~ "Ecrevisse americaine",
+           Cdnom == "18432" ~ "Ecrevisse a pattes rouges",
+           Cdnom == "18437" ~ "Ecrevisse a pieds blancs"),
+         
+         Fournisseur = recode(Fournisseur,
+                              "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB" = "OFB",
+                              "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB" = "OFB",
+                              "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE OCCITANIE (OFB" = "OFB"),
+         Nom_scientifique = str_remove(Nom_scientifique, "\\s*\\([^\\)]*\\)"),
+         
+         Presence = recode(Presence,
+                           "présent" = "Présent")) %>%
   filter(Cdnom != "65899") # Supression de l'écrevisse de terre (courtillère)
   
 
@@ -71,7 +87,8 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
   mutate(Statut = case_when(
     Statut == "Envahissante" ~ "Espèce envahissante",
     Cdnom == "162666" ~ "Espèce représentée",
-    TRUE ~ "Espèce autochtone"))
+    TRUE ~ "Espèce autochtone")) %>%
+  filter(Departement == c("16","17","19","23", "24", "33", "40", "47", "64", "79", "86", "87"))
 
 ###---------------------------------------------------------#
 cli::cli_h1("Sauvegarder le fichier")
@@ -79,6 +96,7 @@ cli::cli_h1("Sauvegarder le fichier")
 st_write(bdd_ecrevisse, "processed_data/bdd_ecrevisse.gpkg", 
          append = FALSE,
          driver = "GPKG")
+
 
 
 

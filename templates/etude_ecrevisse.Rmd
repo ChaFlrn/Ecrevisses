@@ -32,7 +32,7 @@ library(hubeau)
 library(jsonlite)
 library(httr)
 library(flextable)
-
+library(ineq)
 
 colors_esp <- c(
   "Ecrevisse a pattes greles" = "#8DD3C7",
@@ -47,6 +47,21 @@ colors_statut <- c(
   "Espèce envahissante" = "#e67e22",
   "Espèce représentée" = "#4895ef",
   "Espèce autochtone" = "#8ccb3f")
+
+colors_dep <- c(
+  "16" = "#1F65C1",   
+  "17" = "#A35CC8",   
+  "19" = "#8CCB3F",   
+  "23" = "#52B788",  
+  "24" = "#B03A2E",   
+  "33" = "#FCBF49",   
+  "40" = "#FF6D00",   
+  "47" = "#F2E45A",  
+  "64" = "#E41A1C",   
+  "79" = "#7209B7",    
+  "86" = "#4895EF",   
+  "87" = "#1B4D3E"   
+)
 
 # Ouverture des fichiers utilisés dans le Rmarkdown
 bdd_ecrevisse <- st_read("../processed_data/bdd_ecrevisse.gpkg")
@@ -85,16 +100,14 @@ Un traitement des données avant et après jointure a été réalisé tel que :
 - Vérification des doublons : dans les deux bases initiales des doublons ont été observés, 4 pour FAUNA et 51 pour OISON.
 
 
-- Suppression données OFB : dans la base FAUNA, une grande partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Ainsi, les données OFB présentes dans FAUNA s'étendaient de 1984 à 2021. La décision fut de ne garder que les données OISON antérieures à 1984 et postérieures à 2021, en faisant le postulat que celles entre ces dates sont déjà remontées dans FAUNA.
+- Suppression données OFB : dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Cela a conduit à la suppression de **24 lignes de saisies**. 
 
-
-Par ailleurs, l'OFB fait partie des plus gros contributeur en nombre de saisies dans la base FAUNA alors que la base initiale OISON est peu fournie. Cela pourrait s'expliquer par l'extraction de OISON qui ne comporte que des données ayant une géométrie géographique de type "point" alors que dans la base de données FAUNA il y a des "lignes" et "polygones". 
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
   Base = c("OISON", "FAUNA", "Finale"),
   Donnees_brutes = c(3618,40370,43933),
-  Donnees_traitees = c(3567,40366,40460),
+  Donnees_traitees = c(3567,40366,43909),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -131,11 +144,11 @@ Le tableau ci-dessous recense le nombre de saisies (nombre de lignes) pour chaqu
 ```{r, fig.width = 6, fig.height = 4}
 tablo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
-  group_by(Cdnom, Nom_vernaculaire, Nom_scientifique) %>%
+  group_by(Cdnom, Nom_vernaculaire) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
   mutate(total = sum(nb_saisies),
          pourcentage = round((nb_saisies / total)*100,3)) %>%
-  select(-total, 
+  select(-total,
          -Cdnom) %>%
   arrange(desc(pourcentage))
 
@@ -918,6 +931,85 @@ carte_17646_2025 <- ggplot(pop_17646_2025) +
 ```
 
 ```{r}
+pop_162666_2005 <- bdd_effectif %>%
+  filter(Date <= "2005" & Cdnom == "162666") %>%
+  st_point_on_surface()
+
+pop_162666_2015 <- bdd_effectif %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162666") %>%
+  st_point_on_surface()
+
+pop_162666_2025 <- bdd_effectif %>%
+  filter(Date > "2015" & Cdnom == "162666") %>%
+  st_point_on_surface()
+
+
+carte_162666_2005 <- ggplot(pop_162666_2005) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Avant 2005",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162666_2015 <- ggplot(pop_162666_2015) +
+ geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2005 à 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
+carte_162666_2025 <- ggplot(pop_162666_2025) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "Depuis 2015",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+```
+
+
+```{r}
 pop_162667_2005 <- bdd_effectif %>%
   filter(Date <= "2005" & Cdnom == "162667") %>%
   st_point_on_surface()
@@ -1092,6 +1184,13 @@ cartes_17646 <- (carte_17646_2005 | carte_17646_2015 | carte_17646_2025) +
       plot.subtitle = element_text(size = 8)
     ))
 
+cartes_162666 <- (carte_162666_2005 | carte_162666_2015 | carte_162666_2025) +
+  plot_annotation(
+    theme = theme(
+      plot.title = element_text(size = 14),
+      plot.subtitle = element_text(size = 8)
+    ))
+
 cartes_162667 <- (carte_162667_2005 | carte_162667_2015 | carte_162667_2025) +
   plot_annotation(
     theme = theme(
@@ -1111,11 +1210,149 @@ cartes_18437 / cartes_17646
 
 ```
 
+
+
 ```{r, fig.width = 18, fig.height = 18}
 cartes_162667 / cartes_162668
 ```
 
 \newpage
+
+### Par données d'absence
+Le tableau ci-dessous présente le nombre de données en fonction de la présence ou non d'individus lors de la prospection. Ces données d'absence ne sont disponibles que pour celles provenant de la base OISON. En effet, dans la base de données FAUNA, l'ensemble des saisies étaient marquées comme "présentes".
+***Seule l'écrevisse à pieds blancs contient un statut absent dans la base de données.***
+
+```{r, fig.width = 18, fig.height = 18}
+tablo_abs <- bdd_ecrevisse %>%
+  st_set_geometry(NULL) %>%
+  group_by(Presence) %>%
+  summarise(total = n()) %>%
+  mutate(pourcentage = round((total / sum(total))*100,2)) %>%
+  filter(!is.na(Presence))
+
+# Créer tableau pour rapport
+tablo_abs <- tablo_abs %>%
+  mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
+
+flextable(tablo_abs) %>%
+  set_header_labels(
+    Presence = "Présence de l'espèce",
+    Total = "Nombre de saisies",
+    pourcentage = "Pourcentage de contribution") %>%
+  theme_vanilla() %>%
+  color(part = "header", color = "white") %>%
+  bg(part = "header", bg = "#333333") %>%
+  bold(part = "header") %>% 
+  align(j = colnames(tablo_abs), align = "center", part = "all") %>% 
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
+  autofit()
+```
+
+## Analyse de la pression d'observation
+
+```{r}
+pression_obs <- bdd_ecrevisse %>%
+  st_set_geometry(NULL) %>%
+  filter(Presence !="Absent") %>%
+  group_by(Departement) %>%
+  summarise(
+    nb_obs = n(),
+    nb_dates = n_distinct(Date_precis),
+    nb_especes = n_distinct(Cdnom))
+
+
+mean_obs <- round(mean(pression_obs$nb_obs),1)
+median_obs <- round(median(pression_obs$nb_obs),1)
+
+sd <- round(sd(pression_obs$nb_obs),1)
+
+IQR <- round(IQR(pression_obs$nb_obs),1)
+
+```
+
+
+La pression d'observation désigne la fréquence d'observation faite par les observateurs sur un lieu donné. 
+L'analyse du nombre de saisies par département donne les informations suivantes :
+
+- Nombre moyen de saisies par département = `r mean_obs`
+
+
+- Nombre médian de saisies par département = `r median_obs`
+
+
+- Ecart-type du nombre de saisies par département = `r sd`
+
+
+- L'écart interquartile = `r IQR`
+
+
+Le tableau ci-dessous indique pour chaque département : le nombre de données saisies, le nombre de jours prospectés et le nombre d'espèces différentes.
+
+```{r, fig.width = 6, fig.height = 4}
+
+# Créer tableau pour rapport
+tablo_pression_obs <- pression_obs %>%
+  mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE)))
+
+flextable(tablo_pression_obs) %>%
+  set_header_labels(
+    Departement = "Département",
+    nb_obs = "Nombre de saisies",
+    nb_dates = "Nombre de jours prospectés",
+    nb_especes = "Nombre d'espèces saisies") %>%
+  theme_vanilla() %>%
+  color(part = "header", color = "white") %>%
+  bg(part = "header", bg = "#333333") %>%
+  bold(part = "header") %>% 
+  align(j = colnames(pression_obs), align = "center", part = "all") %>% 
+  fontsize(part = "header", size = 11) %>%
+  fontsize(part = "body", size = 10) %>%
+  autofit()
+
+```
+```{r, fig.width = 10, fig.height = 8}
+# Valeur du Gini
+gini <- round(ineq(pression_obs$nb_obs, type = "Gini"),2)
+
+# Graphique combiné
+ggplot(pression_obs, aes(x = factor(Departement), y = nb_obs)) +
+  geom_point(size = 4, color = colors_dep) +  # points des départements
+  geom_hline(yintercept = mean_obs, color = "red", linetype = "dashed", size = 1) +
+  geom_hline(yintercept = median_obs, color = "black", linetype = "solid", size = 1) +
+  annotate(
+    "text",
+    x = 6, y = max(pression_obs$nb_obs) + 30, # ajuster la position si nécessaire
+    label = paste0("Gini = ", round(gini_val, 3)),
+    color = "darkgreen", size = 5) +
+  annotate(
+    "text",
+    x = 11, y = mean_obs + 40,
+    label = paste0("Moyenne = ", round(mean_obs, 0)),
+    color = "red", size = 4) +
+  annotate(
+    "text",
+    x = 11, y = median_obs - 40,
+    label = paste0("Médiane = ", round(median_obs, 0)),
+    color = "black", size = 4) +
+  labs(
+    x = "Département",
+    y = "Nombre d'observations",
+    title = "Disparité inter-départementale de la pression d'observation",
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 10))
+
+```
+
+L'indice de Gini est un indice synthétique d'inégalité variant entre 0 (égalité parfaite) et 1 (inégalité extrême). 
+
+Pour ces données, l'indice de Gini du nombre de saisies par département est de `r gini` ce qui indique une inégalité modérée à forte de la répartition de la pression d'observation. Quelques départements concentrent une part importante des saisies, ce qui est cohérent avec les statistiques descriptives présentées ci-dessus (moyenne, médiane et écart-type).
+
+
+
+\newpage
+
 
 # Bibliographie
 

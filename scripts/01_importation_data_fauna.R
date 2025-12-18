@@ -33,6 +33,7 @@ cli::cli_h1("Récupérer les contributeurs et trier la base")
 data_fauna <- data_fauna %>%
   left_join(data_meta, by = c("IdJdd" = "IdJeuDonnees")) %>%
   mutate(Date = substr(DateDebut, 1,4),
+         Cdnom = as.character(CdNomCite),
          Observateur = str_trim(str_extract(Observer, "^[^()]+")),
          Fournisseur = case_when(
            is.na(Fournisseur) ~ str_extract(Observer, "(?<=\\().+?(?=\\))"),
@@ -40,10 +41,12 @@ data_fauna <- data_fauna %>%
          Effectif = coalesce(
            as.character(DenbrMax),
            as.character(DenbrMin),
-           "Non renseigné")) %>%
+           "Non renseigné"),
+         Source = "FAUNA") %>%
   select(Id = IdRegional,
          Date,
-         Cdnom = CdNomCite,
+         Date_precis = DateDebut,
+         Cdnom,
          Nom_vernaculaire = TaxNomVern,
          Nom_scientifique = TaxNomVal,
          Classe,
@@ -57,6 +60,7 @@ data_fauna <- data_fauna %>%
          Fiabilite = NivValReg,
          Observateur,
          Fournisseur,
+         Source,
          Geometrie = GeomWkt)
 
 ###---------------------------------------------------------#

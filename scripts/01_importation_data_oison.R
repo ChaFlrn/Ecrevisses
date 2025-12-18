@@ -26,9 +26,11 @@ data_oison <- data_oison %>%
   mutate(Date = substr(date, 1,4),
          Fournisseur = "OFB",
          Observateur = paste(nom,prenom),
-         Effectif = ifelse(is.na(nombre_individu), "Non renseigné", nombre_individu)) %>%
+         Effectif = ifelse(is.na(nombre_individu), "Non renseigné", nombre_individu),
+         Source = "OISON") %>%
   select(Id = observation_id,
          Date,
+         Date_precis = date,
          Cdnom = cd_nom,
          Nom_vernaculaire = nom_vernaculaire,
          Nom_scientifique = nom_scientifique,
@@ -43,6 +45,7 @@ data_oison <- data_oison %>%
          Fiabilite = status,
          Observateur,
          Fournisseur,
+         Source,
          Geometrie = geom)
 
 
