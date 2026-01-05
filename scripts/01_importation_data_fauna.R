@@ -34,7 +34,6 @@ data_fauna <- data_fauna %>%
   left_join(data_meta, by = c("IdJdd" = "IdJeuDonnees")) %>%
   mutate(Date = substr(DateDebut, 1,4),
          Cdnom = as.character(CdNomCite),
-         Observateur = str_trim(str_extract(Observer, "^[^()]+")),
          Fournisseur = case_when(
            is.na(Fournisseur) ~ str_extract(Observer, "(?<=\\().+?(?=\\))"),
            TRUE ~ Fournisseur),
@@ -49,16 +48,11 @@ data_fauna <- data_fauna %>%
          Cdnom,
          Nom_vernaculaire = TaxNomVern,
          Nom_scientifique = TaxNomVal,
-         Classe,
-         Ordre,
-         Famille,
          Effectif,
          Presence = StatPresen,
          Departement = CodeDpt,
-         Commune = NomCom,
          InseeCom,
          Fiabilite = NivValReg,
-         Observateur,
          Fournisseur,
          Source,
          Geometrie = GeomWkt)

@@ -87,6 +87,7 @@ cli::cli_h1("Joindre les données spatiales")
 data_naiades <- data_naiades %>%
   left_join(data_geo_naiades,
             by = "Cdstation") %>%
+  mutate(Date_precis = as.Date(Date_precis)) %>%
   select(Id,
          Date,
          Date_precis,

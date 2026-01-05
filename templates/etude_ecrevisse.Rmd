@@ -95,19 +95,23 @@ La base de données de travail est une jointure de deux bases distinctes :
 - **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. 
 
 
+- **NAIADES** : portail regroupant les données sur la qualité des eaux de surface (hydrobiologie, physicochimie, hydromorphologie), recueillies par les agences de l'eau, les offices de l'eau et l'OFB.
+
+
+
 Un traitement des données avant et après jointure a été réalisé tel que :
 
 - Vérification des doublons : dans les deux bases initiales des doublons ont été observés, 4 pour FAUNA et 51 pour OISON.
 
 
-- Suppression données OFB : dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Cela a conduit à la suppression de **24 lignes de saisies**. 
+- Suppression données OFB : dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Cela a conduit à la suppression de **24 lignes de saisies**. Après vérification, il ne semble pas y avoir de doublons avec la base de données Naïades. 
 
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
-  Base = c("OISON", "FAUNA", "Finale"),
-  Donnees_brutes = c(3618,40370,43933),
-  Donnees_traitees = c(3567,40366,43909),
+  Base = c("OISON", "FAUNA", "NAIADES", "Finale"),
+  Donnees_brutes = c(3618,40370,2340,46273),
+  Donnees_traitees = c(3567,40366,2340,46248),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -307,8 +311,8 @@ esp_17646 <- bdd_ecrevisse %>%
   filter(Cdnom == 17646) %>%
   st_point_on_surface()
 
-esp_18432 <- bdd_ecrevisse %>%
-  filter(Cdnom == 18432)
+#esp_18432 <- bdd_ecrevisse %>%
+  #filter(Cdnom == 18432)
 
 esp_18437 <- bdd_ecrevisse %>%
   filter(Cdnom == 18437) %>%
@@ -376,20 +380,20 @@ carte_esp4 <- ggplot(esp_17646) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
-carte_esp5 <- ggplot(esp_18432) +
-  geom_sf(data = departements,
-          fill = "grey95", color = "black", size = 0.3) +
-  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
-          color = "black",
-          alpha = 0.85, 
-          size = 3, 
-          shape = 21) +
-  scale_fill_manual(values = colors_esp) +
-  labs(title = "Écrevisses à pattes rouges") +
-  theme_void(base_size = 9) +
-  theme(text = element_text(size = 10),
-        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "none")
+#carte_esp5 <- ggplot(esp_18432) +
+  #geom_sf(data = departements,
+          #fill = "grey95", color = "black", size = 0.3) +
+  #geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
+          #color = "black",
+          #alpha = 0.85, 
+          #size = 3, 
+          #shape = 21) +
+  #scale_fill_manual(values = colors_esp) +
+  #labs(title = "Écrevisses à pattes rouges") +
+  #theme_void(base_size = 9) +
+  #theme(text = element_text(size = 10),
+        #plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        #legend.position = "none")
 
 carte_esp6 <- ggplot(esp_18437) +
   geom_sf(data = departements,
@@ -412,7 +416,7 @@ Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquita
 
 ```{r, fig.width = 15, fig.height = 15}
 # Faire un seul graphique avec les 6 cartes
-(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
+(carte_esp1 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
 ```
 
 \newpage
@@ -507,7 +511,8 @@ carac_esp_spe <- bdd_effectif %>%
   mutate(Periode = case_when(
     Date <= "2005" ~ "2005",
     Date > "2005" & Date <= "2015" ~ "2005_2015",
-    Date > "2015" ~ "2025")) %>%
+    Date > "2015" & Date <= "2020" ~ "2015_2020",
+    Date > "2020" ~ "2025")) %>%
   group_by(Nom_vernaculaire, Periode) %>%
   summarise(nb = sum(Observations), .groups = "drop") %>%
   tidyr::pivot_wider(
@@ -527,7 +532,8 @@ flextable(carac_esp_spe) %>%
     Nom_vernaculaire = "Espèce",
     nb_obs_2005 = "Observations \navant 2005",
     nb_obs_2005_2015 = "Observations \nentre 2005 et 2015",
-    nb_obs_2025 = "Observations \naprès 2015") %>%
+    nb_obs_2015_2020 = "Observations \nentre 2015 et 2020",
+    nb_obs_2025 = "Observations \naprès 2020") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
@@ -557,8 +563,12 @@ pop_eee_2015 <- bdd_ecrevisse %>%
   filter(Date > "2005" & Date <= "2015" & Statut == "Espèce envahissante") %>%
   st_point_on_surface()
 
+pop_eee_2020 <- bdd_ecrevisse %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce envahissante") %>%
+  st_point_on_surface()
+
 pop_eee_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Statut == "Espèce envahissante") %>%
+  filter(Date > "2020" & Statut == "Espèce envahissante") %>%
   st_point_on_surface()
 
 carte_eee_2005 <- ggplot(pop_eee_2005) +
@@ -591,6 +601,21 @@ carte_eee_2015 <- ggplot(pop_eee_2015) +
         plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_eee_2020 <- ggplot(pop_eee_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "De 2015 à 2020") +
+  theme_void() +
+  theme(text = element_text(size = 6),
+        plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_eee_2025 <- ggplot(pop_eee_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -600,7 +625,7 @@ carte_eee_2025 <- ggplot(pop_eee_2025) +
           size = 3, 
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
-  labs(title = "Depuis 2015") +
+  labs(title = "Depuis 2020") +
   theme_void() +
   theme(text = element_text(size = 6),
         plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
@@ -620,8 +645,12 @@ pop_aut_2015 <- bdd_ecrevisse %>%
   filter(Date > "2005" & Date <= "2015" & Statut == "Espèce autochtone") %>%
   st_point_on_surface()
 
+pop_aut_2020 <- bdd_ecrevisse %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce autochtone") %>%
+  st_point_on_surface()
+
 pop_aut_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Statut == "Espèce autochtone") %>%
+  filter(Date > "2020" & Statut == "Espèce autochtone") %>%
   st_point_on_surface()
 
 carte_aut_2005 <- ggplot(pop_aut_2005) +
@@ -654,6 +683,21 @@ carte_aut_2015 <- ggplot(pop_aut_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_aut_2020 <- ggplot(pop_aut_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "De 2015 à 2020") +
+  theme_void() +
+  theme(text = element_text(size = 6),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_aut_2025 <- ggplot(pop_aut_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -663,7 +707,7 @@ carte_aut_2025 <- ggplot(pop_aut_2025) +
           size = 3, 
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
-  labs(title = "Depuis 2015") +
+  labs(title = "Depuis 2020") +
   theme_void() +
   theme(text = element_text(size = 6),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
@@ -681,8 +725,12 @@ pop_rep_2015 <- bdd_ecrevisse %>%
   filter(Date > "2005" & Date <= "2015" & Statut == "Espèce représentée") %>%
   st_point_on_surface()
 
+pop_rep_2020 <- bdd_ecrevisse %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce représentée") %>%
+  st_point_on_surface()
+
 pop_rep_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Statut == "Espèce représentée") %>%
+  filter(Date > "2020" & Statut == "Espèce représentée") %>%
   st_point_on_surface()
 
 carte_rep_2005 <- ggplot(pop_rep_2005) +
@@ -715,6 +763,23 @@ carte_rep_2015 <- ggplot(pop_rep_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_rep_2020 <- ggplot(pop_rep_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Statut),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_statut) +
+  labs(title = "De 2015 à 2020") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
 carte_rep_2025 <- ggplot(pop_rep_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -724,13 +789,14 @@ carte_rep_2025 <- ggplot(pop_rep_2025) +
           size = 3, 
           shape = 21) +
   scale_fill_manual(values = colors_statut) +
-  labs(title = "Depuis 2015") +
+  labs(title = "Depuis 2020") +
   theme_void() +
   theme(text = element_text(size = 10),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "right",
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 12))
+
 ```
 
 
@@ -740,21 +806,21 @@ Cartographie de l'évolution du **nombre de saisies** des espèces autochtones, 
 
 ```{r, fig.width = 18, fig.height = 18}
 # Assemblage des cartes
-cartes_eee <- (carte_eee_2005 | carte_eee_2015 | carte_eee_2025) +
+cartes_eee <- (carte_eee_2005 | carte_eee_2015 | carte_eee_2020 | carte_eee_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_aut <- (carte_aut_2005 | carte_aut_2015 | carte_aut_2025) +
+cartes_aut <- (carte_aut_2005 | carte_aut_2015 | carte_aut_2020 | carte_aut_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_rep <- (carte_rep_2005 | carte_rep_2015 | carte_rep_2025) +
+cartes_rep <- (carte_rep_2005 | carte_rep_2015 | carte_rep_2020 | carte_rep_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
@@ -783,8 +849,12 @@ pop_18437_2015 <- bdd_effectif %>%
   filter(Date > "2005" & Date <= "2015" & Cdnom == "18437") %>%
   st_point_on_surface()
 
+pop_18437_2020 <- bdd_effectif %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "18437") %>%
+  st_point_on_surface()
+
 pop_18437_2025 <- bdd_effectif %>%
-  filter(Date > "2015" & Cdnom == "18437") %>%
+  filter(Date > "2020" & Cdnom == "18437") %>%
   st_point_on_surface()
 
 
@@ -828,6 +898,26 @@ carte_18437_2015 <- ggplot(pop_18437_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_18437_2020 <- ggplot(pop_18437_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2015 à 2020",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_18437_2025 <- ggplot(pop_18437_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -840,7 +930,7 @@ carte_18437_2025 <- ggplot(pop_18437_2025) +
                         limits = c(0, max_eff),
                         breaks = breaks_fixed,
                         labels = labels_fixed) +
-  labs(title = "Depuis 2015",
+  labs(title = "Depuis 2020",
        size = "Nombre d'individus",
        fill = "Espèce") +
   theme_void() +
@@ -861,8 +951,12 @@ pop_17646_2015 <- bdd_effectif %>%
   filter(Date > "2005" & Date <= "2015" & Cdnom == "17646") %>%
   st_point_on_surface()
 
+pop_17646_2020 <- bdd_effectif %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "17646") %>%
+  st_point_on_surface()
+
 pop_17646_2025 <- bdd_effectif %>%
-  filter(Date > "2015" & Cdnom == "17646") %>%
+  filter(Date > "2020" & Cdnom == "17646") %>%
   st_point_on_surface()
 
 
@@ -906,6 +1000,26 @@ carte_17646_2015 <- ggplot(pop_17646_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_17646_2020 <- ggplot(pop_17646_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2015 à 2020",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_17646_2025 <- ggplot(pop_17646_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -918,7 +1032,7 @@ carte_17646_2025 <- ggplot(pop_17646_2025) +
                         limits = c(0, max_eff),
                         breaks = breaks_fixed,
                         labels = labels_fixed) +
-  labs(title = "Depuis 2015",
+  labs(title = "Depuis 2020",
        size = "Nombre d'individus",
        fill = "Espèce") +
   theme_void() +
@@ -939,8 +1053,12 @@ pop_162666_2015 <- bdd_effectif %>%
   filter(Date > "2005" & Date <= "2015" & Cdnom == "162666") %>%
   st_point_on_surface()
 
+pop_162666_2020 <- bdd_effectif %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162666") %>%
+  st_point_on_surface()
+
 pop_162666_2025 <- bdd_effectif %>%
-  filter(Date > "2015" & Cdnom == "162666") %>%
+  filter(Date > "2020" & Cdnom == "162666") %>%
   st_point_on_surface()
 
 
@@ -984,6 +1102,26 @@ carte_162666_2015 <- ggplot(pop_162666_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_162666_2020 <- ggplot(pop_162666_2020) +
+ geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2015 à 2020",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_162666_2025 <- ggplot(pop_162666_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -996,7 +1134,7 @@ carte_162666_2025 <- ggplot(pop_162666_2025) +
                         limits = c(0, max_eff),
                         breaks = breaks_fixed,
                         labels = labels_fixed) +
-  labs(title = "Depuis 2015",
+  labs(title = "Depuis 2020",
        size = "Nombre d'individus",
        fill = "Espèce") +
   theme_void() +
@@ -1016,6 +1154,10 @@ pop_162667_2005 <- bdd_effectif %>%
 
 pop_162667_2015 <- bdd_effectif %>%
   filter(Date > "2005" & Date <= "2015" & Cdnom == "162667") %>%
+  st_point_on_surface()
+
+pop_162667_2020 <- bdd_effectif %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162667") %>%
   st_point_on_surface()
 
 pop_162667_2025 <- bdd_effectif %>%
@@ -1063,6 +1205,26 @@ carte_162667_2015 <- ggplot(pop_162667_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_162667_2020 <- ggplot(pop_162667_2020) +
+ geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2015 à 2020",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_162667_2025 <- ggplot(pop_162667_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -1075,7 +1237,7 @@ carte_162667_2025 <- ggplot(pop_162667_2025) +
                         limits = c(0, max_eff),
                         breaks = breaks_fixed,
                         labels = labels_fixed) +
-  labs(title = "Depuis 2015",
+  labs(title = "Depuis 2020",
        size = "Nombre d'individus",
        fill = "Espèce") +
   theme_void() +
@@ -1094,6 +1256,10 @@ pop_162668_2005 <- bdd_effectif %>%
 
 pop_162668_2015 <- bdd_effectif %>%
   filter(Date > "2005" & Date <= "2015" & Cdnom == "162668") %>%
+  st_point_on_surface()
+
+pop_162668_2020 <- bdd_effectif %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162668") %>%
   st_point_on_surface()
 
 pop_162668_2025 <- bdd_effectif %>%
@@ -1141,6 +1307,26 @@ carte_162668_2015 <- ggplot(pop_162668_2015) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
+carte_162668_2020 <- ggplot(pop_162668_2020) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire, size = Observations),
+          color = "black",
+          alpha = 0.85, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  scale_size_continuous(range = c(0,12),
+                        limits = c(0, max_eff),
+                        breaks = breaks_fixed,
+                        labels = labels_fixed) +
+  labs(title = "De 2015 à 2020",
+       size = "Nombre d'individus",
+       fill = "Espèce") +
+  theme_void() +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
+
 carte_162668_2025 <- ggplot(pop_162668_2025) +
   geom_sf(data = departements,
           fill = "grey95", color = "black", size = 0.3) +
@@ -1153,7 +1339,7 @@ carte_162668_2025 <- ggplot(pop_162668_2025) +
                         limits = c(0, max_eff),
                         breaks = breaks_fixed,
                         labels = labels_fixed) +
-  labs(title = "Depuis 2015",
+  labs(title = "Depuis 2020",
        size = "Nombre d'individus",
        fill = "Espèce") +
   theme_void() +
@@ -1170,35 +1356,35 @@ Le rayonnement du cercle est proportionnel au nombre d'individus recensés sur l
 
 ```{r, fig.width = 18, fig.height = 18}
 # Assemblage des cartes
-cartes_18437 <- (carte_18437_2005 | carte_18437_2015 | carte_18437_2025) +
+cartes_18437 <- (carte_18437_2005 | carte_18437_2015 |carte_18437_2020 | carte_18437_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_17646 <- (carte_17646_2005 | carte_17646_2015 | carte_17646_2025) +
+cartes_17646 <- (carte_17646_2005 | carte_17646_2015 | carte_17646_2020 | carte_17646_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_162666 <- (carte_162666_2005 | carte_162666_2015 | carte_162666_2025) +
+cartes_162666 <- (carte_162666_2005 | carte_162666_2015 | carte_162666_2020 | carte_162666_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_162667 <- (carte_162667_2005 | carte_162667_2015 | carte_162667_2025) +
+cartes_162667 <- (carte_162667_2005 | carte_162667_2015 | carte_162667_2020 | carte_162667_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_162668 <- (carte_162668_2005 | carte_162668_2015 | carte_162668_2025) +
+cartes_162668 <- (carte_162668_2005 | carte_162668_2015 | carte_162668_2020 | carte_162668_2025) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
@@ -1323,7 +1509,7 @@ ggplot(pression_obs, aes(x = factor(Departement), y = nb_obs)) +
   annotate(
     "text",
     x = 6, y = max(pression_obs$nb_obs) + 30, # ajuster la position si nécessaire
-    label = paste0("Gini = ", round(gini_val, 3)),
+    label = paste0("Gini = ", round(gini, 3)),
     color = "darkgreen", size = 5) +
   annotate(
     "text",

@@ -7,6 +7,7 @@ data_oison <- st_read("processed_data/data_oison.gpkg")
 
 data_fauna <- st_read("processed_data/data_fauna.gpkg")
 
+data_naiades <- st_read("processed_data/data_naiades.gpkg")
 
 ###---------------------------------------------------------#
 cli::cli_h1("Supprimer les doublons OFB") 
@@ -21,16 +22,19 @@ fauna <- data_fauna %>%
   st_set_geometry(NULL) %>%
   as.data.frame()
 
+
 data_doublons <- fauna %>%
   inner_join(oison,
              by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
   mutate(doublon = "oui")
 
+
 ###---------------------------------------------------------#
 cli::cli_h1("Assembler les bases")
 
 bdd_ecrevisse <- rbind(data_oison,
-                       data_fauna)
+                       data_fauna,
+                       data_naiades)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Nettoyage du fichier")
