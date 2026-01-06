@@ -92,7 +92,9 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
     Statut == "Envahissante" ~ "Espèce envahissante",
     Cdnom == "162666" ~ "Espèce représentée",
     TRUE ~ "Espèce autochtone")) %>%
-  filter(Departement == c("16","17","19","23", "24", "33", "40", "47", "64", "79", "86", "87"))
+  filter(Departement %in% c("16","17","19","23", "24", "33", "40", "47", "64", "79", "86", "87"))
+
+
 
 ###---------------------------------------------------------#
 cli::cli_h1("Sauvegarder le fichier")

@@ -89,13 +89,13 @@ Cette approche contribue à renforcer la capacité d'expertise régionale et à 
 
 La base de données de travail est une jointure de deux bases distinctes :
 
-- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles.
+- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 05/12/2025*
 
 
-- **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. 
+- **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. *Date de l'extraction : 04/12/2025*
 
 
-- **NAIADES** : portail regroupant les données sur la qualité des eaux de surface (hydrobiologie, physicochimie, hydromorphologie), recueillies par les agences de l'eau, les offices de l'eau et l'OFB.
+- **NAIADES** : portail regroupant les données sur la qualité des eaux de surface (hydrobiologie, physicochimie, hydromorphologie), recueillies par les agences de l'eau, les offices de l'eau et l'OFB. *Date de l'extraction : 19/12/2025*
 
 
 
@@ -111,7 +111,7 @@ Un traitement des données avant et après jointure a été réalisé tel que :
 tablo_data <- data.frame(
   Base = c("OISON", "FAUNA", "NAIADES", "Finale"),
   Donnees_brutes = c(3618,40370,2340,46273),
-  Donnees_traitees = c(3567,40366,2340,46248),
+  Donnees_traitees = c(3567,40366,2340,46239),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -205,9 +205,10 @@ flextable(tablo_contrib) %>%
   bg(part = "header", bg = "#333333") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_contrib), align = "center", part = "all") %>% 
-  fontsize(part = "header", size = 11) %>%
-  fontsize(part = "body", size = 10) %>%
-  autofit()
+  fontsize(part = "header", size = 10) %>%
+  fontsize(part = "body", size = 9) %>%
+  autofit() %>%
+  width(j = "Fournisseur", width = 3)
 ```
 
 
@@ -311,8 +312,8 @@ esp_17646 <- bdd_ecrevisse %>%
   filter(Cdnom == 17646) %>%
   st_point_on_surface()
 
-#esp_18432 <- bdd_ecrevisse %>%
-  #filter(Cdnom == 18432)
+esp_18432 <- bdd_ecrevisse %>%
+  filter(Cdnom == 18432)
 
 esp_18437 <- bdd_ecrevisse %>%
   filter(Cdnom == 18437) %>%
@@ -380,20 +381,20 @@ carte_esp4 <- ggplot(esp_17646) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
-#carte_esp5 <- ggplot(esp_18432) +
-  #geom_sf(data = departements,
-          #fill = "grey95", color = "black", size = 0.3) +
-  #geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
-          #color = "black",
-          #alpha = 0.85, 
-          #size = 3, 
-          #shape = 21) +
-  #scale_fill_manual(values = colors_esp) +
-  #labs(title = "Écrevisses à pattes rouges") +
-  #theme_void(base_size = 9) +
-  #theme(text = element_text(size = 10),
-        #plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        #legend.position = "none")
+carte_esp5 <- ggplot(esp_18432) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  labs(title = "Écrevisses à pattes rouges") +
+  theme_void(base_size = 9) +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
 
 carte_esp6 <- ggplot(esp_18437) +
   geom_sf(data = departements,
@@ -416,7 +417,7 @@ Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquita
 
 ```{r, fig.width = 15, fig.height = 15}
 # Faire un seul graphique avec les 6 cartes
-(carte_esp1 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
+(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
 ```
 
 \newpage
@@ -776,9 +777,7 @@ carte_rep_2020 <- ggplot(pop_rep_2020) +
   theme_void() +
   theme(text = element_text(size = 10),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "right",
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 12))
+        legend.position = "none")
 
 carte_rep_2025 <- ggplot(pop_rep_2025) +
   geom_sf(data = departements,
