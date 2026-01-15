@@ -1,0 +1,17 @@
+#%%%%%%%%%%%%%%%%%%%%%%%% Chargement des parckages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+library(sf)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(patchwork)
+library(vegan)
+library(hubeau)
+library(jsonlite)
+library(httr)
+library(ineq)
+library(flextable)
+library(aspe)
+library(dplyr)
+library(stringr)

@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+raw_data/
+processed_data/
+output/
+assets/
+*.csv
+*.RData
+*.rds
+*.txt
+*.gpkg
