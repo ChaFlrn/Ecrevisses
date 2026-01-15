@@ -3,10 +3,13 @@
 ###---------------------------------------------------------#
 cli::cli_h1("Extraire les données de la base") 
 
-aspe_db <- imp_connecter_aspe_idg()
+#aspe_db <- imp_connecter_aspe_idg()
 
-imp_importer_aspe_idg(aspe_db)
-export_tables_rdata()
+#imp_importer_aspe_idg(aspe_db)
+#export_tables_rdata()
+
+load(file="processed_data/tables_sauf_mei_2026_01_14.RData")
+load(file="processed_data/mei_1_2026_01_14.RData")
 
 ###---------------------------------------------------------#
 cli::cli_h1("Créer un jeu de données") 
@@ -38,6 +41,7 @@ aspe_na <-
             by = "typ_id") %>%
   filter(dept %in% c(16, 17, 19, 23, 24, 33, 40, 47, 64, 79, 86, 87),
          str_detect(esp_nom_commun, "Ecrevisse"))
+
 
 ###---------------------------------------------------------#
 cli::cli_h1("Transformer en objet spatial")

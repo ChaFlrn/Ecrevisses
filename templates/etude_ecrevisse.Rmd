@@ -251,6 +251,7 @@ ggplot() +
   theme(
     axis.text.x = element_text(size = 12),
     axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 12),
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     legend.title = element_blank(),
     legend.text = element_text(size = 12)
@@ -279,11 +280,12 @@ ggplot(histo_synt_esp) +
     title = "Evolution du nombre de saisies par espèces") +
   scale_color_manual(values = colors_esp,
                      name = "Espèces") +
-  scale_y_continuous(breaks = seq(0, max(histo_synt_esp$nb_saisies), by = 50)) +
+  scale_y_continuous(breaks = seq(0, max(histo_synt_esp$nb_saisies), by = 200)) +
   scale_x_continuous(breaks = seq(min(histo_synt_esp$Date), max(histo_synt_esp$Date), by = 5)) +
   theme(
     axis.text.x = element_text(size = 12),
     axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 12),
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     legend.title = element_blank(),
     legend.text = element_text(size = 16),
