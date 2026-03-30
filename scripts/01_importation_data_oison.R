@@ -37,7 +37,6 @@ data_oison <- data_oison %>%
          Effectif,
          Presence = presence,
          Departement = insee_dep,
-         InseeCom = insee_com,
          Fiabilite = status,
          Fournisseur,
          Source,

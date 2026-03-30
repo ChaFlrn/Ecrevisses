@@ -27,7 +27,12 @@ cli::cli_h1("Analyse quantitative")
 
 tablo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
-  group_by(Cdnom, Nom_vernaculaire) %>%
+  mutate(Periode = case_when(
+    Date <= "2005" ~ "2005",
+    Date > "2005" & Date <= "2015" ~ "2005_2015",
+    Date > "2015" & Date <= "2020" ~ "2015_2020",
+    Date > "2020" ~ "2025")) %>%
+  group_by(Cdnom, Nom_vernaculaire, Periode) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
   mutate(total = sum(nb_saisies),
          pourcentage = round((nb_saisies / total)*100,2)) %>%
@@ -43,7 +48,20 @@ tablo_contrib <- bdd_ecrevisse %>%
   select(- total) %>%
   arrange(desc(pourcentage))
 
-
+tablo_synt_contrib <- bdd_ecrevisse %>%
+  st_set_geometry(NULL) %>%
+  mutate(Periode = case_when(
+    Date <= "2005" ~ "2005",
+    Date > "2005" & Date <= "2015" ~ "2005_2015",
+    Date > "2015" & Date <= "2020" ~ "2015_2020",
+    Date > "2020" ~ "2025"),
+    Source = ifelse(Fournisseur == "OFB", "OFB", "Hors OFB")) %>%
+  group_by(Source, Periode) %>%
+  summarise(nb_saisies = n(), .groups = "drop") %>%
+  mutate(total = sum(nb_saisies),
+         pourcentage = round((nb_saisies / total)*100,2)) %>%
+  select(-total) %>%
+  arrange(desc(pourcentage))
 
 # Graphique nombre de saisies par année et par département
 histo_synt_saisies <- bdd_ecrevisse %>%
@@ -180,5 +198,10 @@ carte_esp1 <- ggplot(esp_162666) +
         legend.position = "none")
 
 
+ecrevisse79 <- bdd_ecrevisse %>%
+  filter(Nom_vernaculaire == "Ecrevisse a pattes rouges") 
 
+unique(ecrevisse79$Cdnom)
+
+plot(ecrevisse79)
 

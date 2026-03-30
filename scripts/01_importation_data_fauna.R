@@ -51,7 +51,6 @@ data_fauna <- data_fauna %>%
          Effectif,
          Presence = StatPresen,
          Departement = CodeDpt,
-         InseeCom,
          Fiabilite = NivValReg,
          Fournisseur,
          Source,

@@ -9,11 +9,15 @@ data_fauna <- st_read("processed_data/data_fauna.gpkg")
 
 data_naiades <- st_read("processed_data/data_naiades.gpkg")
 
-data_aspe <- st_read("processed_data/data_aspe.gpkg")
+data_aspe <- st_read("processed_data/data_aspe.gpkg") 
+
+data_astaq <- st_read("processed_data/data_astaq.gpkg")
+
+departements <- st_read("assets/departements.gpkg")
 
 
 ###---------------------------------------------------------#
-cli::cli_h1("Supprimer les doublons OFB") 
+cli::cli_h1("Supprimer les doublons") 
 
 oison <- data_oison %>%
   mutate(geom_wkt = st_as_text(geom)) %>%
@@ -36,6 +40,10 @@ naiades <- data_naiades %>%
   st_set_geometry(NULL) %>%
   as.data.frame()
 
+astaq <- data_astaq %>%
+  mutate(geom_wkt = st_as_text(geom)) %>%
+  st_set_geometry(NULL) %>%
+  as.data.frame()
 
 
 data_doublons_f_o <- fauna %>%
@@ -49,9 +57,22 @@ data_doublons_a_n <- aspe %>%
              by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
   mutate(doublon = "oui")
 
+data_doublons_a_aq <- aspe %>%
+  mutate(Date_precis = as.Date(Date_precis)) %>%
+  inner_join(astaq,
+             by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
+  mutate(doublon = "oui")
+
+data_doublons_f_aq <- fauna %>%
+  inner_join(astaq,
+             by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
+  mutate(doublon = "oui")
+
 
 data_doublons <- rbind(data_doublons_f_o,
-                       data_doublons_a_n)
+                       data_doublons_a_n,
+                       data_doublons_a_aq,
+                       data_doublons_f_aq)
 
 
 ###---------------------------------------------------------#
@@ -60,7 +81,8 @@ cli::cli_h1("Assembler les bases")
 bdd_ecrevisse <- rbind(data_oison,
                        data_fauna,
                        data_naiades,
-                       data_aspe)
+                       data_aspe,
+                       data_astaq)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Nettoyage du fichier")
@@ -81,7 +103,8 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
            Cdnom == "162668" ~ "Ecrevisse de Louisiane",
            Cdnom == "17646" ~ "Ecrevisse americaine",
            Cdnom == "18432" ~ "Ecrevisse a pattes rouges",
-           Cdnom == "18437" ~ "Ecrevisse a pieds blancs"),
+           Cdnom == "18437" ~ "Ecrevisse a pieds blancs",
+           Cdnom == "320575" ~ "Ecrevisse calicot"),
          
          Fournisseur = recode(Fournisseur,
                               "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB" = "OFB",
@@ -118,7 +141,9 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
     Statut == "Envahissante" ~ "Espèce envahissante",
     Cdnom == "162666" ~ "Espèce représentée",
     TRUE ~ "Espèce autochtone")) %>%
-  filter(Departement %in% c("16","17","19","23", "24", "33", "40", "47", "64", "79", "86", "87"))
+  filter(Departement %in% c("16","17","19","23", "24", "33", "40", "47", "64", "79", "86", "87")) %>%
+  st_filter(departements)
+
 
 
 

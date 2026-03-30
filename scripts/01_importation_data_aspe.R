@@ -74,7 +74,8 @@ data_aspe <- data_aspe %>%
          Date_precis = substr(ope_date, 1,10),
          Fiabilite = "Valide",
          Source = "Aspe",
-         Fournisseur = "OFB") %>%
+         Fournisseur = "OFB",
+         Date_precis = as.Date(Date_precis)) %>%
 
   select(Id,
          Date = annee,
@@ -85,7 +86,6 @@ data_aspe <- data_aspe %>%
          Effectif = lop_effectif,
          Presence,
          Departement = dept,
-         InseeCom = sta_com_code_insee,
          Fiabilite,
          Fournisseur,
          Source,

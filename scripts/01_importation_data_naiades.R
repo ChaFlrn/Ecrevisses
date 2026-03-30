@@ -97,7 +97,6 @@ data_naiades <- data_naiades %>%
          Effectif,
          Presence,
          Departement,
-         InseeCom,
          Fiabilite,
          Fournisseur,
          Source,

@@ -1,6 +1,6 @@
 ---
 title: "Bilan des saisies Ecrevisses"
-subtitle: "Données FAUNA et OISON"
+subtitle: "Données ASPE, ASTAQUITAINE, FAUNA, NAIADES et OISON"
 author: "OFB DR Nouvelle-Aquitaine - Service régional Connaissance"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 toc-title: "Sommaire"
@@ -40,7 +40,8 @@ colors_esp <- c(
   "Ecrevisse a pieds blancs" = "#4895EF",
   "Ecrevisse de Californie" = "#E67E22",
   "Ecrevisse de Louisiane" = "#E41A1C",
-  "Ecrevisse americaine" = "#67000D"
+  "Ecrevisse americaine" = "#67000D",
+  "Ecrevisse calicot" = "#3B0910"
 )
 
 colors_statut <- c(
@@ -67,6 +68,12 @@ colors_dep <- c(
 bdd_ecrevisse <- st_read("../processed_data/bdd_ecrevisse.gpkg")
 departements <- st_read("../assets/departements.gpkg")
 
+data_oison <- st_read("../processed_data/data_oison.gpkg")
+data_fauna <- st_read("../processed_data/data_fauna.gpkg")
+data_naiades <- st_read("../processed_data/data_naiades.gpkg")
+data_aspe <- st_read("../processed_data/data_aspe.gpkg")
+data_astaq <- st_read("../processed_data/data_astaq.gpkg")
+
 ```
 \newpage
 
@@ -92,6 +99,8 @@ La base de données de travail est une jointure de deux bases distinctes :
 - **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 14/01/2026*
 
 
+- **ASTAQUITAINE** : base de données réalisée dans le cadre du Programme Aquitain Ecrevisses à Pattes blanches. Elle centralise les données issues d'inventaires piscicoles par pêche électrique et d'inventaires astacicoles par prospection nocturne ou piégeage. *Date de l'extraction : 10/02/2026*
+
 - **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 05/12/2025*
 
 
@@ -102,15 +111,13 @@ La base de données de travail est une jointure de deux bases distinctes :
 
 
 
-Un traitement des données avant et après jointure a été réalisé tel que :
-
-- Suppression données OFB : dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE et NAIADES. Cela a conduit à la suppression de **897 doublons**.
+Un traitement des données avant et après jointure a été réalisé en supprimant des données OFB et autres doublons. Dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE, NAIADES et ASTAQUITAINE. Cela a conduit à la suppression de **894 doublons**.
+La base finale est donc constituée de `r nrow(bdd_ecrevisse)` données d'observations d'écrevisses sur l'ensemble de la région Nouvelle-Aquitaine.
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
-  Base = c("ASPE", "OISON", "FAUNA", "NAIADES", "Base finale"),
-  Donnees_brutes = c(34990, 3618, 40370, 2340, 81318),
-  Donnees_traitees = c(34148, 3567, 40366 ,2340, 80421),
+  Base = c("ASPE", "ASTAQUITAINE","FAUNA","NAIADES","OISON"),
+  Donnees_brutes = c(nrow(data_aspe), nrow(data_astaq), nrow(data_fauna), nrow(data_naiades),nrow(data_oison)),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -120,8 +127,7 @@ tablo_data <- tablo_data %>%
 flextable(tablo_data) %>%
   set_header_labels(
     Base = "Base de données",
-    Donnees_brutes = "Données brutes",
-    Donnees_traitees = "Données traitées") %>%
+    Donnees_brutes = "Données traitées") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
@@ -224,7 +230,8 @@ histo_synt_saisies <- bdd_ecrevisse %>%
   group_by(Date) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
   mutate(Date = as.numeric(Date),
-         Type = "Total saisies")
+         Type = "Total saisies") %>%
+  filter(!is.na(Date))
   
 contrib_ofb <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
@@ -264,7 +271,8 @@ histo_synt_esp <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
   mutate(Date = as.numeric(Date)) %>%
   group_by(Date,Cdnom, Nom_vernaculaire) %>%
-  summarise(nb_saisies = n(), .groups = "drop")
+  summarise(nb_saisies = n(), .groups = "drop") %>%
+  filter(!is.na(Date))
 
 ggplot(histo_synt_esp) +
   aes(
@@ -318,6 +326,10 @@ esp_18432 <- bdd_ecrevisse %>%
 
 esp_18437 <- bdd_ecrevisse %>%
   filter(Cdnom == 18437) %>%
+  st_point_on_surface()
+
+esp_320575 <- bdd_ecrevisse %>%
+  filter(Cdnom == 320575) %>%
   st_point_on_surface()
 
 
@@ -411,6 +423,21 @@ carte_esp6 <- ggplot(esp_18437) +
   theme(text = element_text(size = 10),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
+
+carte_esp7  <- ggplot(esp_320575) +
+  geom_sf(data = departements,
+          fill = "grey95", color = "black", size = 0.3) +
+  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
+          color = "black",
+          alpha = 0.85, 
+          size = 3, 
+          shape = 21) +
+  scale_fill_manual(values = colors_esp) +
+  labs(title = "Écrevisses calicot") +
+  theme_void(base_size = 9) +
+  theme(text = element_text(size = 10),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position = "none")
 ```
 
 Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquitaine. Les dynamiques de populations seront étudiées plus tard dans le rapport.
@@ -418,7 +445,7 @@ Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquita
 
 ```{r, fig.width = 15, fig.height = 15}
 # Faire un seul graphique avec les 6 cartes
-(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
+(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4 | carte_esp7)
 ```
 
 \newpage
@@ -498,7 +525,7 @@ flextable(carac_esp) %>%
 
 Le tableau ci-dessous cumule les données de dénombrement par espèce, en fonction des trois périodes temporelles.
 
-Ici, ce sont bien les **données d'effectifs** qui sont analysées, certaines espèces n'ont aucune information sur le nombre d'individus présents lors de la saisie, elles ne ressortent donc pas dans le tableau. 
+Ici, ce sont bien les **données d'effectifs** qui sont analysées, de nombreuses observations ne contiennent pas de données d'effectifs.
 
 Cela met en lumière l'importance de la qualité de la donnée, un non-remplissage de la colonne "effectif" est-il signe d'une absence de l'espèce ? 
 
@@ -532,10 +559,10 @@ carac_esp_spe <- carac_esp_spe %>%
 flextable(carac_esp_spe) %>%
   set_header_labels(
     Nom_vernaculaire = "Espèce",
-    nb_obs_2005 = "Observations \navant 2005",
-    nb_obs_2005_2015 = "Observations \nentre 2005 et 2015",
-    nb_obs_2015_2020 = "Observations \nentre 2015 et 2020",
-    nb_obs_2025 = "Observations \naprès 2020") %>%
+    nb_obs_2005 = "Individus \navant 2005",
+    nb_obs_2005_2015 = "Individus \nentre 2005 et 2015",
+    nb_obs_2015_2020 = "Individus \nentre 2015 et 2020",
+    nb_obs_2025 = "Individus \naprès 2020") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
   bg(part = "header", bg = "#333333") %>%
@@ -798,8 +825,6 @@ carte_rep_2025 <- ggplot(pop_rep_2025) +
         legend.text = element_text(size = 12))
 
 ```
-
-
 
 
 Cartographie de l'évolution du **nombre de saisies** des espèces autochtones, des espèces représentées (écrevisses à pattes grêles) et des espèces envahissantes selon les trois périodes temporelles.
@@ -1120,7 +1145,9 @@ carte_162666_2020 <- ggplot(pop_162666_2020) +
   theme_void() +
   theme(text = element_text(size = 10),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "none")
+        legend.position = "right",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
 carte_162666_2025 <- ggplot(pop_162666_2025) +
   geom_sf(data = departements,
@@ -1140,9 +1167,7 @@ carte_162666_2025 <- ggplot(pop_162666_2025) +
   theme_void() +
   theme(text = element_text(size = 10),
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "right",
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 12))
+        legend.position = "none")
 
 ```
 
@@ -1351,7 +1376,8 @@ carte_162668_2025 <- ggplot(pop_162668_2025) +
 
 ```
 
-Cartographie par espèce, du **nombre d'individus** observés selon les trois mêmes périodes temporelles. Toutes les espèces ne sont pas représentées car seulement quatre d'entre elles ont des données de dénombrement des individus.
+
+Cartographie par espèce, du **nombre d'individus** observés selon les trois mêmes périodes temporelles. Du fait du très peu nombre de données d'effectifs pour l'écrevisse calicot (1 individu) et l'écrevisse à pattes rouges (304 individus avant 2005, aucune information d'effectif depuis) ne sont pas représentées dans les cartes suivantes. 
 Le rayonnement du cercle est proportionnel au nombre d'individus recensés sur le point géographique concerné.
 
 ```{r, fig.width = 18, fig.height = 18}
@@ -1370,7 +1396,7 @@ cartes_17646 <- (carte_17646_2005 | carte_17646_2015 | carte_17646_2020 | carte_
       plot.subtitle = element_text(size = 8)
     ))
 
-cartes_162666 <- (carte_162666_2005 | carte_162666_2015 | carte_162666_2020 | carte_162666_2025) +
+cartes_162666 <- (carte_162666_2005 | carte_162666_2015 | carte_162666_2020) +
   plot_annotation(
     theme = theme(
       plot.title = element_text(size = 14),
@@ -1392,14 +1418,14 @@ cartes_162668 <- (carte_162668_2005 | carte_162668_2015 | carte_162668_2020 | ca
     ))
 
 
-cartes_18437 / cartes_17646
+cartes_18437 / cartes_162666
 
 ```
 
 
 
 ```{r, fig.width = 18, fig.height = 18}
-cartes_162667 / cartes_162668
+cartes_162667 / cartes_162668 / cartes_17646
 ```
 
 \newpage
