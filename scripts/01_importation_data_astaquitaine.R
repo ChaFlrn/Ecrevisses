@@ -1,4 +1,4 @@
-#%%%%%%%%%%%%%%%%%%%%% Importation données ASTAQUITAINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%% Importation données ASTAQUITAINE %%%%%%%%%%%%%%%%%%%%%%%%
 
 ###---------------------------------------------------------#
 cli::cli_h1("Lire le fichier format .gpkg") 

@@ -13,6 +13,8 @@ data_aspe <- st_read("processed_data/data_aspe.gpkg")
 
 data_astaq <- st_read("processed_data/data_astaq.gpkg")
 
+data_64 <- st_read("processed_data/data_64.gpkg")
+
 departements <- st_read("assets/departements.gpkg")
 
 
@@ -82,7 +84,8 @@ bdd_ecrevisse <- rbind(data_oison,
                        data_fauna,
                        data_naiades,
                        data_aspe,
-                       data_astaq)
+                       data_astaq,
+                       data_64)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Nettoyage du fichier")

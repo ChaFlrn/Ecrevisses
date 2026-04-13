@@ -21,6 +21,7 @@ aspe_na <-
   mef_ajouter_lots() %>%
   mef_ajouter_esp() %>%
   mef_ajouter_mei() %>%
+  mef_ajouter_intervenants() %>%
   left_join(point_prelevement %>%
               select(pop_id,
                      typ_id = pop_typ_id,
@@ -74,7 +75,10 @@ data_aspe <- data_aspe %>%
          Date_precis = substr(ope_date, 1,10),
          Fiabilite = "Valide",
          Source = "Aspe",
-         Fournisseur = "OFB",
+         Fournisseur = recode(operateur_peche,
+                                            "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB)" = "OFB",
+                                            "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB)" = "OFB",
+                              "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE OCCITANIE (OFB)" = "OFB"),
          Date_precis = as.Date(Date_precis)) %>%
 
   select(Id,

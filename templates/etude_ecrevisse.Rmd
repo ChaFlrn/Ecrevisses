@@ -1,6 +1,6 @@
 ---
 title: "Bilan des saisies Ecrevisses"
-subtitle: "Données ASPE, ASTAQUITAINE, FAUNA, NAIADES et OISON"
+subtitle: "Données ASPE, ASTAQUITAINE, FAUNA, FDAAPPMA 64, NAIADES et OISON"
 author: "OFB DR Nouvelle-Aquitaine - Service régional Connaissance"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 toc-title: "Sommaire"
@@ -110,14 +110,15 @@ La base de données de travail est une jointure de deux bases distinctes :
 - **NAIADES** : portail regroupant les données sur la qualité des eaux de surface (hydrobiologie, physicochimie, hydromorphologie), recueillies par les agences de l'eau, les offices de l'eau et l'OFB. *Date de l'extraction : 19/12/2025*
 
 
+- **FDAAPPMA 64** : données issues pour partie de la base de données Géopikaia. *Date de l'extraction : 07/02/2026*
 
 Un traitement des données avant et après jointure a été réalisé en supprimant des données OFB et autres doublons. Dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE, NAIADES et ASTAQUITAINE. Cela a conduit à la suppression de **894 doublons**.
 La base finale est donc constituée de `r nrow(bdd_ecrevisse)` données d'observations d'écrevisses sur l'ensemble de la région Nouvelle-Aquitaine.
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
-  Base = c("ASPE", "ASTAQUITAINE","FAUNA","NAIADES","OISON"),
-  Donnees_brutes = c(nrow(data_aspe), nrow(data_astaq), nrow(data_fauna), nrow(data_naiades),nrow(data_oison)),
+  Base = c("ASPE", "ASTAQUITAINE","FAUNA","FDAAPPMA 64", "NAIADES","OISON"),
+  Donnees_brutes = c(nrow(data_aspe), nrow(data_astaq), nrow(data_fauna), nrow(data_64), nrow(data_naiades),nrow(data_oison)),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -159,7 +160,8 @@ tablo_synt_esp <- bdd_ecrevisse %>%
          pourcentage = round((nb_saisies / total)*100,3)) %>%
   select(-total,
          -Cdnom) %>%
-  arrange(desc(pourcentage))
+  arrange(desc(pourcentage)) %>%
+  filter(!is.na(Nom_vernaculaire))
 
 # Créer tableau pour rapport
 tablo_synt_esp <- tablo_synt_esp %>%
@@ -193,7 +195,8 @@ tablo_contrib <- bdd_ecrevisse %>%
   mutate(total = sum(nb_saisies),
          pourcentage = round((nb_saisies / total)*100,3)) %>%
   select(- total) %>%
-  arrange(desc(pourcentage))
+  arrange(desc(pourcentage)) %>%
+  filter(!is.na(Fournisseur))
 
 
 # Créer tableau pour rapport
@@ -272,7 +275,8 @@ histo_synt_esp <- bdd_ecrevisse %>%
   mutate(Date = as.numeric(Date)) %>%
   group_by(Date,Cdnom, Nom_vernaculaire) %>%
   summarise(nb_saisies = n(), .groups = "drop") %>%
-  filter(!is.na(Date))
+  filter(!is.na(Date),
+         !is.na(Nom_vernaculaire))
 
 ggplot(histo_synt_esp) +
   aes(
@@ -554,7 +558,8 @@ carac_esp_spe <- bdd_effectif %>%
 # Créer tableau pour rapport
 carac_esp_spe <- carac_esp_spe %>%
   mutate(across(where(is.numeric), ~ format(., big.mark = " ", decimal.mark = ",", scientific = FALSE, trim = TRUE))) %>%
-  select(-nb_obs_2025, nb_obs_2025)
+  select(-nb_obs_2025, nb_obs_2025) %>%
+  filter(!is.na(Nom_vernaculaire))
 
 flextable(carac_esp_spe) %>%
   set_header_labels(
