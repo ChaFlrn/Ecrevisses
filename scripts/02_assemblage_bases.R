@@ -47,6 +47,10 @@ astaq <- data_astaq %>%
   st_set_geometry(NULL) %>%
   as.data.frame()
 
+data64 <- data_64 %>%
+  mutate(geom_wkt = st_as_text(geom)) %>%
+  st_set_geometry(NULL) %>%
+  as.data.frame()
 
 data_doublons_f_o <- fauna %>%
   inner_join(oison,
@@ -71,10 +75,17 @@ data_doublons_f_aq <- fauna %>%
   mutate(doublon = "oui")
 
 
+data_doublons_aq_64 <- astaq %>%
+  inner_join(data64,
+             by = c("Date_precis", "Cdnom", "geom_wkt")) %>%
+  mutate(doublon = "oui")
+
+
 data_doublons <- rbind(data_doublons_f_o,
                        data_doublons_a_n,
                        data_doublons_a_aq,
-                       data_doublons_f_aq)
+                       data_doublons_f_aq,
+                       data_doublons_aq_64)
 
 
 ###---------------------------------------------------------#
