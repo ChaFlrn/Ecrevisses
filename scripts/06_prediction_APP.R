@@ -86,9 +86,8 @@ data_APP_final <- data_APP_pts %>%
          -priorite_esp)
 
 
-data_esp <- data_APP_final %>%
-  filter(Presence == "Présent") %>%
-  select(-Presence_APP)
+save(data_APP_final, file = "processed_data/data_APP_final.RData")
+load(file = "processed_data/data_APP_final.RData")
 
 
 ####-------------------Données environnementales----------------------------####
@@ -97,25 +96,27 @@ cli::cli_h1("Récupérer les données environnementales")
 ##### Données alitude et pente #####
 departements <- st_read("assets/departements.gpkg")
 
-
-# emprise des stations
-emprise <- st_bbox(data_APP_final)
-
 # téléchargement DEM
-mnt <- get_elev_raster(
-  locations = departements,
-  z = 12,
-  clip = "locations"
-)
+#mnt <- get_elev_raster(
+  #locations = departements,
+  #z = 12,
+  #clip = "locations")
 
-mnt <- rast(mnt)
+#mnt <- rast(mnt)
 
 plot(mnt)
+
+#writeRaster(
+  #mnt,
+  #"processed_data/mnt_departements.tif",
+  #overwrite = TRUE)
+
+mnt <- rast("processed_data/mnt_departements.tif")
 
 # Associer chaque point au cours d'eau le plus proche
 
 idx <- st_nearest_feature(data_APP_final, cours_eau)
-data_APP_final$riviere_id <- idx
+data_APP_final$riviere_id <- cours_eau$id_ligne[idx]
 
 resultats <- list()
 
@@ -198,56 +199,13 @@ for(i in 1:nrow(data_APP_final)){
   )
 }
 
-# assemblage final
+# Assemblage final
 data_station_alti_pente <- bind_rows(resultats)
 
-
-plot(
-  st_geometry(data_APP_final),
-  col = "black",
-  pch = 16,
-  cex = 0.3,
-  add = TRUE
-)
-
-# Sauvegarde du fichier
-
 save(data_station_alti_pente, file = "processed_data/data_station_alti_pente.RData")
+load(file = "processed_data/data_station_alti_pente.RData")
 
-bdd_APP_alti <- data_APP_final %>%
-  left_join(data_station_alti_pente,
-            by = c("Id" = "id_station"))
-
-save(bdd_APP_alti, file = "processed_data/bdd_APP_alti.RData")
-
-
-##### Bassins versants topographiques #####
-
-bv_topo <- st_read("assets/bv_na.gpkg")
-
-cours_eau_bv <- cours_eau %>%
-  st_intersection(bv_topo) %>%
-  mutate(intersection = st_length(geom)) %>%
-  group_by(id_ligne) %>%
-  slice_max(intersection,
-            n = 1,
-            with_ties = FALSE) %>%
-  ungroup() %>%
-  st_set_geometry(NULL)
-
-bdd_APP_alti_bv <- bdd_APP_alti %>%
-  left_join(cours_eau_bv %>%
-              select(id_ligne,
-                     toponyme,
-                     caractere_permanent,
-                     topooh,
-                     surface_m),
-            by = c("riviere_id" = "id_ligne"))
-
-save(bdd_APP_alti_bv, file = "processed_data/bdd_APP_alti_bv.RData")
-
-
-##### Température de l'eau #####
+##### Température de l'eau et Qualité physico-chimique #####
 
 url <- paste0(
   "https://hubeau.eaufrance.fr/api/v2/qualite_rivieres/station_pc?code_region=75",
@@ -269,14 +227,18 @@ stations_na <- stations_na %>%
            crs = 4326) %>%
   st_transform(crs = 2154)
 
+save(stations_na, file = "processed_data/stations_na.RData")
+load(file = "processed_data/stations_na.RData" )
+
+
+
+
 idx <- st_nearest_feature(data_APP_final,
                           stations_na)
 
-data_APP_final$code_station_hubeau <-
-  stations_na$code_station[idx]
+data_APP_final$code_station_hubeau <- stations_na$code_station[idx]
 
-data_APP_final$nom_station_hubeau <-
-  stations_na$libelle_station[idx]
+data_APP_final$nom_station_hubeau <- stations_na$libelle_station[idx]
 
 distances <- st_distance(
   data_APP_final,
@@ -284,12 +246,9 @@ distances <- st_distance(
   by_element = TRUE
 )
 
-data_APP_final$distance_hubeau_m <-
-  as.numeric(distances)
+data_APP_final$distance_hubeau_m <- as.numeric(distances)
 
-codes <- unique(
-  data_APP_final$code_station_hubeau
-)
+codes <- unique(data_APP_final$code_station_hubeau)
 
 temperature_all <- map_dfr(
   
@@ -308,41 +267,116 @@ temperature_all <- map_dfr(
   }
 )
 
-stations_temp <- temperature_all %>%
-  filter(code_parametre == "1301") %>%
+
+save(temperature_all, file = "processed_data/temperature_all.RData")
+
+
+stations_quali <- temperature_all %>%
+  filter(code_parametre %in% c("1301","1311","1335", "1340", "1302")) %>%
   group_by(code_station) %>%
-  summarise(temp_min = min(resultat, na.rm = TRUE),
-         temp_max = max(resultat, na.rm = TRUE),
-         temp_moy = mean(resultat, na.rm = TRUE),
-         n = n())
+  summarise(temp_min = min(resultat[code_parametre == "1301"], na.rm = TRUE),
+         temp_max = max(resultat[code_parametre == "1301"], na.rm = TRUE),
+         temp_moy = mean(resultat[code_parametre == "1301"], na.rm = TRUE),
+         
+         ox_dis_min = min(resultat[code_parametre == "1311"], na.rm = TRUE),
+         ox_dis_max = max(resultat[code_parametre == "1311"], na.rm = TRUE),
+         ox_dis_moy = mean(resultat[code_parametre == "1311"], na.rm = TRUE),
+         
+         ammonium_min = min(resultat[code_parametre == "1335"], na.rm = TRUE),
+         ammonium_max = max(resultat[code_parametre == "1335"], na.rm = TRUE),
+         ammonium_moy = mean(resultat[code_parametre == "1335"], na.rm = TRUE),
+         
+         nitrates_min = min(resultat[code_parametre == "1340"], na.rm = TRUE),
+         nitrates_max = max(resultat[code_parametre == "1340"], na.rm = TRUE),
+         nitrates_moy = mean(resultat[code_parametre == "1340"], na.rm = TRUE),
+         
+         ph_min = min(resultat[code_parametre == "1302"], na.rm = TRUE),
+         ph_max = max(resultat[code_parametre == "1302"], na.rm = TRUE),
+         ph_moy = mean(resultat[code_parametre == "1302"], na.rm = TRUE),
+         
+         n = n(), .groups = "drop")
+
+save(stations_quali, file = "processed_data/stations_quali.RData")
+#load(file = "processed_data/stations_quali.RData")
 
 
-data_APP_hubeau <- data_APP_final %>%
-  left_join(stations_temp,
-            by = c("code_station_hubeau" = "code_station")) %>%
+#### Bassins versants topographiques, Rang de Strahler et Anthropisation des masses d'eau ####
+
+bv_topo <- st_read("assets/bv_na.gpkg")
+
+masse_eau <- st_read("assets/masses_eau_na.gpkg")
+
+masse_eau_bv <- masse_eau %>%
+  st_transform(crs = st_crs(bv_topo)) %>%
+  st_intersection(bv_topo) %>%
+  mutate(intersection = st_length(geom)) %>%
+  group_by(gid) %>%
+  slice_max(intersection,
+            n = 1,
+            with_ties = FALSE) %>%
+  ungroup() %>%
+  st_set_geometry(NULL) %>%
+  select(id_masse = gid,
+         NomMasseDE,
+         CdNatureMa,
+         CategorieG,
+         StrahlMax,
+         StrahlMin,
+         cdoh)
+
+bv_topo_me <- bv_topo %>%
+  left_join(masse_eau_bv, by = "cdoh")
+
+
+cours_eau_bv <- cours_eau %>%
+  st_intersection(bv_topo_me) %>%
+  mutate(intersection = st_length(geom)) %>%
+  group_by(id_ligne) %>%
+  slice_max(intersection,
+            n = 1,
+            with_ties = FALSE) %>%
+  ungroup() %>%
   st_set_geometry(NULL)
 
 
-bdd_APP <- bdd_APP_alti_bv %>%
-  left_join(data_APP_hubeau %>%
-              select(Id,
-                     code_station_hubeau,
-                     temp_min.y,
-                     temp_max.y,
-                     temp_moy.y),
-            by = "Id")
-
-save(bdd_APP, file = "processed_data/bdd_APP.RData")
-
-
-##### Qualité de l'eau #####
+save(cours_eau_bv, file = "processed_data/cours_eau_bv.RData")
+load(file = "processed_data/cours_eau_bv.RData")
 
 
 
 ##### Occupation du sol #####
 
+clc_18 <- rast("assets/CLC_18.tif")
 
 
+
+
+
+
+##### Assemblage données #####
+
+data_APP_propre <- data_APP_final %>%
+  left_join(cours_eau_bv %>%
+              select(id_ligne,
+                     surface_m,
+                     StrahlMax,
+                     StrahlMin,
+                     CdNatureMa),
+            by = c("riviere_id" = "id_ligne")) %>%
+  left_join(data_station_alti_pente %>%
+              select(id_station,
+                     altitude_moy,
+                     altitude_min,
+                     altitude_max,
+                     pente_pct),
+            by = c("Id" = "id_station")) %>%
+  left_join(stations_quali %>%
+              select(-n),
+            by = c("code_station_hubeau" = "code_station"))
+
+
+save(data_APP_propre, file = "processed_data/data_APP_propre.RData")
+load(file = "processed_data/data_APP_propre.RData")
 
 
 
