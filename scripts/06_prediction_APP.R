@@ -1,382 +1,245 @@
-#%%%%%%%%%%%%%%%%%%%%%%% Prédictions présence APP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%% Prédictions présence APP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-####-------------------Base de données--------------------------------------####
-cli::cli_h1("Récupérer la base de données") 
+####--------------------Analyse Composantes Principales---------------------####
+cli::cli_h1("ACP")
 
-bdd_ecrevisse <- st_read("processed_data/bdd_ecrevisse.gpkg")
-
-####----------------------Préparation fichier-------------------------------####
-cli::cli_h1("Préparer le fichier APP")
-
-data_APP <- bdd_ecrevisse %>%
-  mutate(
-    Ecrevisse = case_when(
-      Cdnom == "18437" ~ "APP",
-      Cdnom == "18432" ~ "ASA ou ASL",
-      Cdnom == "162666" ~ "ASA ou ASL",
-      TRUE ~ "EEE"),
-    
-    Presence_APP = case_when(
-      Ecrevisse == "APP" & Presence == "Présent" ~ "Presence",
-      Ecrevisse == "APP" & Presence == "Absent" ~ "Absence",
-      Ecrevisse == "EEE" & Presence == "Présent" ~ "Absence",
-      TRUE ~ "NSP")) %>%
-  
-  filter(Presence_APP != "NSP")
-  
-####------------------------Tri stations------------------------------------####
-cli::cli_h1("Tri des stations à conserver")
-
-cours_eau <- st_read("assets/cours_deau_NA.gpkg")
-
-data_APP <- st_transform(data_APP, 2154)
-
-cours_eau <- cours_eau %>%
-  st_transform(2154) %>%
-  st_cast("LINESTRING")
-
-cours_eau$id_ligne <- 1:nrow(cours_eau)
-
-
-# Conversion des géométries polygones et lignes en points
-
-geom_type <- st_geometry_type(data_APP)
-
-app_pts <- data_APP[geom_type %in% c("POINT", "MULTIPOINT"),]
-
-app_autres <- data_APP[!geom_type %in% c("POINT", "MULTIPOINT"),]
-
-voisins_rivieres <- st_nearest_feature(app_autres, cours_eau)
-
-nearest_lines <- st_nearest_points(
-  app_autres,
-  cours_eau[voisins_rivieres, ],
-  pairwise = TRUE
-)
-
-nearest_points <- st_cast(nearest_lines, "POINT")
-source_points <- nearest_points[seq(1, length(nearest_points), by = 2)]
-
-app_autres <- st_set_geometry(app_autres, source_points)
-
-data_APP_pts <- rbind(app_pts,
-                      app_autres)
-
-data_APP_pts <- st_cast(data_APP_pts, "POINT")
-
-# Eviter plusieurs points au même endroit (restriction 20m)
-
-coords <- st_coordinates(data_APP_pts)
-
-cluster_20 <-dbscan(coords, eps = 20, minPts = 1)
-
-data_APP_pts$cluster_id <- cluster_20$cluster
-
-
-# Sélection des points selon 3 filtres : espèce, effectif, date
-data_APP_final <- data_APP_pts %>%
-  mutate(priorite_esp = ifelse(Cdnom == "18437", 1, 0)) %>%
-  group_by(cluster_id) %>%
-  arrange(desc(priorite_esp),
-          desc(Effectif),
-          desc(Date_precis)) %>%
-  slice(1) %>%
-  ungroup() %>%
-  select(-cluster_id,
-         -priorite_esp)
-
-
-save(data_APP_final, file = "processed_data/data_APP_final.RData")
-load(file = "processed_data/data_APP_final.RData")
-
-
-####-------------------Données environnementales----------------------------####
-cli::cli_h1("Récupérer les données environnementales")
-
-##### Données alitude et pente #####
-departements <- st_read("assets/departements.gpkg")
-
-# téléchargement DEM
-#mnt <- get_elev_raster(
-  #locations = departements,
-  #z = 12,
-  #clip = "locations")
-
-#mnt <- rast(mnt)
-
-plot(mnt)
-
-#writeRaster(
-  #mnt,
-  #"processed_data/mnt_departements.tif",
-  #overwrite = TRUE)
-
-mnt <- rast("processed_data/mnt_departements.tif")
-
-# Associer chaque point au cours d'eau le plus proche
-
-idx <- st_nearest_feature(data_APP_final, cours_eau)
-data_APP_final$riviere_id <- cours_eau$id_ligne[idx]
-
-resultats <- list()
-
-for(i in 1:nrow(data_APP_final)){
-  
-  cat(
-    "Station :",
-    i,
-    "/",
-    nrow(data_APP_final),
-    "\n"
-  )
-  
-  # station courante
-  station <- data_APP_final[i, ]
-  
-  # rivière associée
-  ligne <- cours_eau[
-    station$riviere_id,
-  ]
-  
-  # sécurité
-  if(nrow(ligne) == 0){
-    next
-  }
-  
-  # extraction tronçon
-  troncon <- tryCatch(
-    
-    extraire_troncon_buffer(
-      point = station,
-      ligne = ligne,
-      distance = 200
-    ),
-    
-    error = function(e){
-      return(NULL)
-    }
-  )
-  
-  if(is.null(troncon)){
-    next
-  }
-  
-  # calcul pente
-  res <- tryCatch(
-    
-    calcul_pente_mnt(
-      troncon,
-      mnt
-    ),
-    
-    error = function(e){
-      return(NULL)
-    }
-  )
-  
-  if(is.null(res)){
-    next
-  }
-  
-  # stockage résultats
-  resultats[[i]] <- data.frame(
-    
-    id_station = station$Id,
-    
-    altitude_moy = res$altitude_moy,
-    
-    altitude_min = res$altitude_min,
-    
-    altitude_max = res$altitude_max,
-    
-    z_debut = res$z_debut,
-    
-    z_fin = res$z_fin,
-    
-    pente_m_m = res$pente_m_m,
-    
-    pente_pct = res$pente_pct
-  )
-}
-
-# Assemblage final
-data_station_alti_pente <- bind_rows(resultats)
-
-save(data_station_alti_pente, file = "processed_data/data_station_alti_pente.RData")
-load(file = "processed_data/data_station_alti_pente.RData")
-
-##### Température de l'eau et Qualité physico-chimique #####
-
-url <- paste0(
-  "https://hubeau.eaufrance.fr/api/v2/qualite_rivieres/station_pc?code_region=75",
-  "&size=20000"
-)
-
-req <- GET(url)
-
-txt <- content(
-  req,
-  "text",
-  encoding = "UTF-8"
-)
-
-stations_na <- fromJSON(txt)$data
-
-stations_na <- stations_na %>%
-  st_as_sf(coords = c("longitude", "latitude"),
-           crs = 4326) %>%
-  st_transform(crs = 2154)
-
-save(stations_na, file = "processed_data/stations_na.RData")
-load(file = "processed_data/stations_na.RData" )
-
-
-
-
-idx <- st_nearest_feature(data_APP_final,
-                          stations_na)
-
-data_APP_final$code_station_hubeau <- stations_na$code_station[idx]
-
-data_APP_final$nom_station_hubeau <- stations_na$libelle_station[idx]
-
-distances <- st_distance(
-  data_APP_final,
-  stations_na[idx, ],
-  by_element = TRUE
-)
-
-data_APP_final$distance_hubeau_m <- as.numeric(distances)
-
-codes <- unique(data_APP_final$code_station_hubeau)
-
-temperature_all <- map_dfr(
-  
-  codes,
-  
-  function(code){
-    
-    cat("Téléchargement :", code, "\n")
-    
-    tryCatch(
-      
-      telecharger_temperature(code),
-      
-      error = function(e) NULL
-    )
-  }
-)
-
-
-save(temperature_all, file = "processed_data/temperature_all.RData")
-
-
-stations_quali <- temperature_all %>%
-  filter(code_parametre %in% c("1301","1311","1335", "1340", "1302")) %>%
-  group_by(code_station) %>%
-  summarise(temp_min = min(resultat[code_parametre == "1301"], na.rm = TRUE),
-         temp_max = max(resultat[code_parametre == "1301"], na.rm = TRUE),
-         temp_moy = mean(resultat[code_parametre == "1301"], na.rm = TRUE),
-         
-         ox_dis_min = min(resultat[code_parametre == "1311"], na.rm = TRUE),
-         ox_dis_max = max(resultat[code_parametre == "1311"], na.rm = TRUE),
-         ox_dis_moy = mean(resultat[code_parametre == "1311"], na.rm = TRUE),
-         
-         ammonium_min = min(resultat[code_parametre == "1335"], na.rm = TRUE),
-         ammonium_max = max(resultat[code_parametre == "1335"], na.rm = TRUE),
-         ammonium_moy = mean(resultat[code_parametre == "1335"], na.rm = TRUE),
-         
-         nitrates_min = min(resultat[code_parametre == "1340"], na.rm = TRUE),
-         nitrates_max = max(resultat[code_parametre == "1340"], na.rm = TRUE),
-         nitrates_moy = mean(resultat[code_parametre == "1340"], na.rm = TRUE),
-         
-         ph_min = min(resultat[code_parametre == "1302"], na.rm = TRUE),
-         ph_max = max(resultat[code_parametre == "1302"], na.rm = TRUE),
-         ph_moy = mean(resultat[code_parametre == "1302"], na.rm = TRUE),
-         
-         n = n(), .groups = "drop")
-
-save(stations_quali, file = "processed_data/stations_quali.RData")
-#load(file = "processed_data/stations_quali.RData")
-
-
-#### Bassins versants topographiques, Rang de Strahler et Anthropisation des masses d'eau ####
-
-bv_topo <- st_read("assets/bv_na.gpkg")
-
-masse_eau <- st_read("assets/masses_eau_na.gpkg")
-
-masse_eau_bv <- masse_eau %>%
-  st_transform(crs = st_crs(bv_topo)) %>%
-  st_intersection(bv_topo) %>%
-  mutate(intersection = st_length(geom)) %>%
-  group_by(gid) %>%
-  slice_max(intersection,
-            n = 1,
-            with_ties = FALSE) %>%
-  ungroup() %>%
+data_acp <- data_APP_propre %>%
   st_set_geometry(NULL) %>%
-  select(id_masse = gid,
-         NomMasseDE,
-         CdNatureMa,
-         CategorieG,
+  mutate(Presence_bin = ifelse(Presence_APP == "Absence", 0, 1),
+         CdNatureMa = as.numeric(CdNatureMa),
+         across(where(is.numeric), ~ replace_na(.x, 0))) %>%
+  select(Presence_bin,
+         surface_m,
          StrahlMax,
          StrahlMin,
-         cdoh)
-
-bv_topo_me <- bv_topo %>%
-  left_join(masse_eau_bv, by = "cdoh")
-
-
-cours_eau_bv <- cours_eau %>%
-  st_intersection(bv_topo_me) %>%
-  mutate(intersection = st_length(geom)) %>%
-  group_by(id_ligne) %>%
-  slice_max(intersection,
-            n = 1,
-            with_ties = FALSE) %>%
-  ungroup() %>%
-  st_set_geometry(NULL)
+         CdNatureMa,
+         altitude_moy,
+         temp_moy,
+         pente_pct,
+         ox_dis_moy,
+         ammonium_moy,
+         nitrates_moy,
+         ph_moy)
 
 
-save(cours_eau_bv, file = "processed_data/cours_eau_bv.RData")
-load(file = "processed_data/cours_eau_bv.RData")
+acp <- dudi.pca(data_acp %>%
+                  select(-Presence_bin),
+                scale = TRUE,
+                scannf = FALSE,
+                nf = 2)
+
+100*acp$eig / sum(acp$eig)
+
+# Cercle de corrélations
+s.corcircle(acp$co,
+            clabel = 0.8)
+
+# Contribution des axes
+acp$co
+
+
+#### Matrice de corrélation ####
+
+cor_mat <- cor(
+  data_acp %>%
+    select(-Presence_bin),
+  use = "complete.obs"
+)
+
+round(cor_mat, 2)
+
+####--------------------Modèles prédiction---------------------####
+cli::cli_h1("Modèles de prédiction")
+
+##### Modèle GLM #####
+
+data_std <- data_acp
+data_std[, -c(1)] <- scale(data_std[, -c(1)])
+
+mod_glm <- glm(
+  Presence_bin ~ altitude_moy +
+    pente_pct +
+    temp_moy +
+    ox_dis_moy +
+    nitrates_moy +
+    ammonium_moy +
+    StrahlMax +
+    surface_m +
+    CdNatureMa,
+  family = binomial,
+  data = data_std
+)
+
+exp(coef(mod_glm))
+summary(mod_glm)$coefficients
+
+set.seed(123)
+
+id_train <- sample(
+  seq_len(nrow(data_std)),
+  size = 0.7 * nrow(data_std)
+)
+
+train <- data_std[id_train, ]
+test  <- data_std[-id_train, ]
+
+glm_mod <- glm(
+  Presence_bin ~ .,
+  family = binomial,
+  data = train
+)
+
+prob_glm <- predict(
+  glm_mod,
+  newdata = test,
+  type = "response"
+)
+
+
+roc_glm <- roc(
+  test$Presence_bin,
+  prob_glm
+)
+
+auc(roc_glm)
+
+##### Modèle Random Forest #####
+
+rf <- randomForest(
+  factor(Presence_bin) ~ .,
+  data = data_acp,
+  importance = TRUE
+)
+
+print(rf)
+importance(rf)
+varImpPlot(rf)
+
+# Robustesse modèle
+set.seed(123)
+
+id_train <- sample(
+  1:nrow(data_acp),
+  size = 0.7 * nrow(data_acp)
+)
+
+train <- data_acp[id_train, ]
+test  <- data_acp[-id_train, ]
+
+rf_train <- randomForest(
+  factor(Presence_bin) ~ .,
+  data = train,
+  importance = TRUE
+)
+
+prob_test <- predict(
+  rf_train,
+  newdata = test,
+  type = "prob"
+)[,2]
+
+roc_test <- roc(test$Presence_bin, prob_test)
+
+auc(roc_test)
+
+# Choix du modèle en fonction du meilleur résultat de l'AUC
+
+
+##### Probabilité absence/présence #####
+pred_class <- ifelse(prob_test > 0.205, 1, 0)
+
+coords(
+  roc_test,
+  "best",
+  ret = c("threshold",
+          "sensitivity",
+          "specificity"))
+
+
+confusionMatrix(
+  factor(pred_class, levels = c(0,1)),
+  factor(test$Presence_bin, levels = c(0,1)),
+  positive = "1"
+)
+
+
+####--------------------Prédiction régionale---------------------####
+cli::cli_h1("Prédiction régionale")
+
+##### Traitement des NA #####
+vars_rf <- c(
+  "surface_m",
+  "StrahlMax",
+  "StrahlMin",
+  "CdNatureMa",
+  "altitude_moy",
+  "temp_moy",
+  "pente_pct",
+  "ox_dis_moy",
+  "ammonium_moy",
+  "nitrates_moy",
+  "ph_moy"
+)
+
+attributs <- st_drop_geometry(cours_troncons)
+
+troncons_ok <- cours_troncons[complete.cases(attribut[, vars_rf]),]
+
+
+##### Prédictions #####
+
+rf_final <- randomForest(
+  factor(Presence_bin) ~ .,
+  data = data_acp,
+  importance = TRUE,
+  ntree = 1000
+)
+
+proba <- predict(
+  rf_final,
+  newdata = troncons_ok,
+  type = "prob"
+)
+
+
+troncons_ok$proba_presence <- proba[,"1"]
+
+summary(troncons_ok$proba_presence)
+
+hist(troncons_ok$proba_presence)
+
+
+##### Préparation fichier pour carte #####
+
+seuil <- 0.205 #seuil défini par les caractéristiques du modèle 
+
+troncons_ok$predic <- ifelse(troncons_ok$proba_presence >= seuil, 1, 0)
+
+troncons_ok$classe_habitat <- cut(
+  troncons_ok$proba_presence,
+  breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+  include.lowest = TRUE,
+  labels = c(
+    "Très faible",
+    "Faible",
+    "Moyen",
+    "Favorable",
+    "Très favorable"))
+
+
+##### Carte simple #####
+ggplot(troncons_ok) +
+  geom_sf(aes(color = proba_presence))
 
 
 
-##### Occupation du sol #####
 
-clc_18 <- rast("assets/CLC_18.tif")
+####----------------------------Sauvegarde---------------------------------####
+cli::cli_h1("Sauvegarde du fichier pour QGIS")
 
-
-
-
-
-
-##### Assemblage données #####
-
-data_APP_propre <- data_APP_final %>%
-  left_join(cours_eau_bv %>%
-              select(id_ligne,
-                     surface_m,
-                     StrahlMax,
-                     StrahlMin,
-                     CdNatureMa),
-            by = c("riviere_id" = "id_ligne")) %>%
-  left_join(data_station_alti_pente %>%
-              select(id_station,
-                     altitude_moy,
-                     altitude_min,
-                     altitude_max,
-                     pente_pct),
-            by = c("Id" = "id_station")) %>%
-  left_join(stations_quali %>%
-              select(-n),
-            by = c("code_station_hubeau" = "code_station"))
-
-
-save(data_APP_propre, file = "processed_data/data_APP_propre.RData")
-load(file = "processed_data/data_APP_propre.RData")
+st_write(troncons_ok, "processed_data/cours_eau_predict.gpkg",
+         append = FALSE,
+         driver = "GPKG")
 
 
 
