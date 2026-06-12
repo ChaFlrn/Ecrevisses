@@ -94,7 +94,7 @@ Cette approche contribue à renforcer la capacité d'expertise régionale et à 
 
 # Présentation des jeux de données
 
-La base de données de travail est une jointure de deux bases distinctes :
+La base de données de travail est une jointure de plusieurs bases distinctes :
 
 - **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 14/01/2026*
 

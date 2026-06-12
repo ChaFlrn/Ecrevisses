@@ -1,5 +1,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%% Prédictions présence APP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+load(file = "processed_data/data_APP_propre.RData")
+
 ####--------------------Analyse Composantes Principales---------------------####
 cli::cli_h1("ACP")
 
@@ -33,6 +35,7 @@ acp <- dudi.pca(data_acp %>%
 # Cercle de corrélations
 s.corcircle(acp$co,
             clabel = 0.8)
+
 
 # Contribution des axes
 acp$co
@@ -166,6 +169,8 @@ confusionMatrix(
 ####--------------------Prédiction régionale---------------------####
 cli::cli_h1("Prédiction régionale")
 
+cours_troncons <- st_read("processed_data/cours_eau_final.gpkg")
+
 ##### Traitement des NA #####
 vars_rf <- c(
   "surface_m",
@@ -183,7 +188,7 @@ vars_rf <- c(
 
 attributs <- st_drop_geometry(cours_troncons)
 
-troncons_ok <- cours_troncons[complete.cases(attribut[, vars_rf]),]
+troncons_ok <- cours_troncons[complete.cases(attributs[, vars_rf]),]
 
 
 ##### Prédictions #####
@@ -240,6 +245,8 @@ cli::cli_h1("Sauvegarde du fichier pour QGIS")
 st_write(troncons_ok, "processed_data/cours_eau_predict.gpkg",
          append = FALSE,
          driver = "GPKG")
+
+
 
 
 
