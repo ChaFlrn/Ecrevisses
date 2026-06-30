@@ -73,6 +73,7 @@ data_fauna <- st_read("../processed_data/data_fauna.gpkg")
 data_naiades <- st_read("../processed_data/data_naiades.gpkg")
 data_aspe <- st_read("../processed_data/data_aspe.gpkg")
 data_astaq <- st_read("../processed_data/data_astaq.gpkg")
+data_sd86 <- st_read("../processed_data/data_sd86.gpkg")
 
 ```
 \newpage
@@ -113,7 +114,7 @@ La base de données de travail est une jointure de plusieurs bases distinctes :
 - **FDAAPPMA 64** : données issues pour partie de la base de données Géopikaia. *Date de l'extraction : 07/02/2026*
 
 Un traitement des données avant et après jointure a été réalisé en supprimant des données OFB et autres doublons. Dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE, NAIADES et ASTAQUITAINE. Cela a conduit à la suppression de **894 doublons**.
-La base finale est donc constituée de `r nrow(bdd_ecrevisse)` données d'observations d'écrevisses sur l'ensemble de la région Nouvelle-Aquitaine.
+La base finale est donc constituée de **`r nrow(bdd_ecrevisse)`** données d'observations d'écrevisses sur l'ensemble de la région Nouvelle-Aquitaine.
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
@@ -537,15 +538,17 @@ Cela met en lumière l'importance de la qualité de la donnée, un non-remplissa
 ```{r, fig.width = 6, fig.height = 4}
 bdd_effectif <- bdd_ecrevisse %>%
   mutate(Observations = as.numeric(Effectif)) %>%
-  filter(!is.na(Observations))
+  filter(!is.na(Observations),
+         !is.na(Date) & Date !="")
 
 carac_esp_spe <- bdd_effectif %>%
   st_set_geometry(NULL) %>%
-  mutate(Periode = case_when(
-    Date <= "2005" ~ "2005",
-    Date > "2005" & Date <= "2015" ~ "2005_2015",
-    Date > "2015" & Date <= "2020" ~ "2015_2020",
-    Date > "2020" ~ "2025")) %>%
+  mutate(Date = as.numeric(Date),
+    Periode = case_when(
+    Date <= 2005 ~ "2005",
+    Date > 2005 & Date <= 2015 ~ "2005_2015",
+    Date > 2015 & Date <= 2020 ~ "2015_2020",
+    Date > 2020 ~ "2025")) %>%
   group_by(Nom_vernaculaire, Periode) %>%
   summarise(nb = sum(Observations), .groups = "drop") %>%
   tidyr::pivot_wider(
@@ -1442,6 +1445,9 @@ Le tableau ci-dessous présente le nombre de données en fonction de la présenc
 ```{r, fig.width = 18, fig.height = 18}
 tablo_abs <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
+  mutate(Presence = dplyr::recode(Presence,
+                           "oui" = "Présent",
+                           "non" = "Absent")) %>%
   group_by(Presence) %>%
   summarise(total = n(), .groups = "drop") %>%
   mutate(pourcentage = round((total / sum(total))*100,2)) %>%

@@ -23,6 +23,7 @@ source("scripts/01_importation_data_fauna.R")
 source("scripts/01_importation_data_naiades.R")
 source("scripts/01_importation_data_oison.R")
 source("scripts/01_importation_data_64.R")
+source("scripts/01_importation_data_sd86.R")
 source("scripts/02_assemblage_bases.R")
 
 ##----------------------------------------------------------------------------##

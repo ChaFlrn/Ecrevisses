@@ -15,6 +15,8 @@ data_astaq <- st_read("processed_data/data_astaq.gpkg")
 
 data_64 <- st_read("processed_data/data_64.gpkg")
 
+data_sd86 <- st_read("processed_data/data_sd86.gpkg")
+
 departements <- st_read("assets/departements.gpkg")
 
 
@@ -96,7 +98,8 @@ bdd_ecrevisse <- rbind(data_oison,
                        data_naiades,
                        data_aspe,
                        data_astaq,
-                       data_64)
+                       data_64,
+                       data_sd86)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Nettoyage du fichier")
@@ -107,7 +110,7 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
             by = c("Id" = "Id.x")) %>%
   filter(is.na(doublon) | doublon != "oui") %>%
   select(-doublon) %>%
-  mutate(Cdnom = recode(Cdnom,
+  mutate(Cdnom = dplyr::recode(Cdnom,
                         "983403" = "162666",
                         "853999" = "17646"),
          
@@ -120,13 +123,13 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
            Cdnom == "18437" ~ "Ecrevisse a pieds blancs",
            Cdnom == "320575" ~ "Ecrevisse calicot"),
          
-         Fournisseur = recode(Fournisseur,
+         Fournisseur = dplyr::recode(Fournisseur,
                               "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB" = "OFB",
                               "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB" = "OFB",
                               "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE OCCITANIE (OFB" = "OFB"),
          Nom_scientifique = str_remove(Nom_scientifique, "\\s*\\([^\\)]*\\)"),
          
-         Presence = recode(Presence,
+         Presence = dplyr::recode(Presence,
                            "présent" = "Présent")) %>%
   filter(Cdnom != "65899") # Supression de l'écrevisse de terre (courtillère)
   
