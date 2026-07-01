@@ -19,16 +19,26 @@ bdd_ecrevisse_simple <- bdd_ecrevisse %>%
          Fournisseur)
 
 ###---------------------------------------------------------#
-cli::cli_h1("Séparation des départements") 
+cli::cli_h1("Création des géopackages") 
 
 dir.create("output/gpkg", showWarnings = FALSE)
 
 for (dept in unique(bdd_ecrevisse_simple$Departement)) {
+  
+  gpkg <- paste0("output/gpkg/departement_", dept, ".gpkg")
+  
+  # Couche des observations
   data_dept <- bdd_ecrevisse %>%
     filter(Departement == dept)
-  st_write(data_dept,
-           paste0("output/gpkg/departement_", dept,".gpkg"),
-           delete_layer = TRUE)}
+  
+  st_write(
+    data_dept,
+    gpkg,
+    layer = "ecrevisses",
+    delete_layer = TRUE,
+    quiet = TRUE
+  )}
+
 
 
 

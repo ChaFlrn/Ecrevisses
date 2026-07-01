@@ -11,3 +11,4 @@ assets/
 *.rds
 *.txt
 *.gpkg
+*.tif
