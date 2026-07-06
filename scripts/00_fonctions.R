@@ -133,7 +133,7 @@ telecharger_temperature <- function(code_station){
   url <- paste0(
     "https://hubeau.eaufrance.fr/api/v2/qualite_rivieres/analyse_pc?",
     "code_station=", code_station,
-    "&code_param=1301",
+    "&code_parametre=1301,1311",
     "&size=20000"
   )
   

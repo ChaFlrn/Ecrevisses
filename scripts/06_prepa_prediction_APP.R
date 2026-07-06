@@ -74,6 +74,7 @@ cluster_20 <-dbscan(coords, eps = 20, minPts = 1)
 data_APP_pts$cluster_id <- cluster_20$cluster
 
 
+
 # Sélection des points selon 3 filtres : espèce, effectif, date
 
 data_APP_final <- data_APP_pts %>%
@@ -250,7 +251,7 @@ data_APP_final$distance_hubeau_m <- as.numeric(distances)
 
 codes <- unique(data_APP_final$code_station_hubeau)
 
-temperature_all <- map_dfr(
+temp_ox <- map_dfr(
   
   codes,
   
@@ -268,13 +269,13 @@ temperature_all <- map_dfr(
 )
 
 
-save(temperature_all, file = "processed_data/temperature_all.RData")
-load("processed_data/temperature_all.RData")
+save(temp_ox, file = "processed_data/temp_ox.RData")
+load("processed_data/temp_ox.RData")
 
 # Ne garder que les paramètres voulus et leurs créer une colonne
 
-stations_quali <- temperature_all %>%
-  filter(code_parametre %in% c("1301","1311","1335", "1340", "1302")) %>%
+stations_quali <- temp_ox %>%
+  filter(code_parametre %in% c("1301","1311")) %>%
   group_by(code_station) %>%
   summarise(temp_min = min(resultat[code_parametre == "1301"], na.rm = TRUE),
          temp_max = max(resultat[code_parametre == "1301"], na.rm = TRUE),
@@ -283,18 +284,6 @@ stations_quali <- temperature_all %>%
          ox_dis_min = min(resultat[code_parametre == "1311"], na.rm = TRUE),
          ox_dis_max = max(resultat[code_parametre == "1311"], na.rm = TRUE),
          ox_dis_moy = mean(resultat[code_parametre == "1311"], na.rm = TRUE),
-         
-         ammonium_min = min(resultat[code_parametre == "1335"], na.rm = TRUE),
-         ammonium_max = max(resultat[code_parametre == "1335"], na.rm = TRUE),
-         ammonium_moy = mean(resultat[code_parametre == "1335"], na.rm = TRUE),
-         
-         nitrates_min = min(resultat[code_parametre == "1340"], na.rm = TRUE),
-         nitrates_max = max(resultat[code_parametre == "1340"], na.rm = TRUE),
-         nitrates_moy = mean(resultat[code_parametre == "1340"], na.rm = TRUE),
-         
-         ph_min = min(resultat[code_parametre == "1302"], na.rm = TRUE),
-         ph_max = max(resultat[code_parametre == "1302"], na.rm = TRUE),
-         ph_moy = mean(resultat[code_parametre == "1302"], na.rm = TRUE),
          
          n = n(), .groups = "drop")
 
@@ -470,30 +459,8 @@ station_temp <- get_qualite_rivieres_analyse(
   date_debut_prelevement = "2024-01-01",
   date_fin_prelevement = Sys.Date())
 
-station_ammo <- get_qualite_rivieres_analyse(
-  code_region = "75",
-  code_parametre = "1335",
-  date_debut_prelevement = "2024-01-01",
-  date_fin_prelevement = Sys.Date())
-
-station_ph <- get_qualite_rivieres_analyse(
-  code_region = "75",
-  code_parametre = "1302",
-  date_debut_prelevement = "2024-01-01",
-  date_fin_prelevement = Sys.Date())
-
-station_nit <- get_qualite_rivieres_analyse(
-  code_region = "75",
-  code_parametre = "1340",
-  date_debut_prelevement = "2024-01-01",
-  date_fin_prelevement = Sys.Date())
-
-
 quali_na <- bind_rows(station_ox,
-                      station_temp,
-                      station_ammo,
-                      station_nit,
-                      station_ph)
+                      station_temp)
 
 quali_na <- quali_na %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
@@ -507,23 +474,14 @@ quali_na <- quali_na %>%
             ox_dis_max = max(resultat[code_parametre == "1311"], na.rm = TRUE),
             ox_dis_moy = mean(resultat[code_parametre == "1311"], na.rm = TRUE),
             
-            ammonium_min = min(resultat[code_parametre == "1335"], na.rm = TRUE),
-            ammonium_max = max(resultat[code_parametre == "1335"], na.rm = TRUE),
-            ammonium_moy = mean(resultat[code_parametre == "1335"], na.rm = TRUE),
-            
-            nitrates_min = min(resultat[code_parametre == "1340"], na.rm = TRUE),
-            nitrates_max = max(resultat[code_parametre == "1340"], na.rm = TRUE),
-            nitrates_moy = mean(resultat[code_parametre == "1340"], na.rm = TRUE),
-            
-            ph_min = min(resultat[code_parametre == "1302"], na.rm = TRUE),
-            ph_max = max(resultat[code_parametre == "1302"], na.rm = TRUE),
-            ph_moy = mean(resultat[code_parametre == "1302"], na.rm = TRUE),
-            
             .groups = "drop")
 
 
 save(quali_na, file = "processed_data/quali_na.RData")
 load("processed_data/quali_na.RData")
+st_write(quali_na, "processed_data/quali_na.gpkg",
+         append = FALSE,
+         driver = "GPKG")
 
 
 ##### Fichier cours d'eau final #####

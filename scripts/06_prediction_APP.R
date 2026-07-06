@@ -12,16 +12,10 @@ data_acp <- data_APP_propre %>%
          across(where(is.numeric), ~ replace_na(.x, 0))) %>%
   select(Presence_bin,
          surface_m,
-         StrahlMax,
-         StrahlMin,
-         CdNatureMa,
          altitude_moy,
          temp_moy,
          pente_pct,
-         ox_dis_moy,
-         ammonium_moy,
-         nitrates_moy,
-         ph_moy)
+         ox_dis_moy)
 
 
 acp <- dudi.pca(data_acp %>%
@@ -64,8 +58,6 @@ mod_glm <- glm(
     pente_pct +
     temp_moy +
     ox_dis_moy +
-    nitrates_moy +
-    ammonium_moy +
     StrahlMax +
     surface_m +
     CdNatureMa,
@@ -149,8 +141,6 @@ auc(roc_test)
 
 
 ##### Probabilité absence/présence #####
-pred_class <- ifelse(prob_test > 0.205, 1, 0)
-
 coords(
   roc_test,
   "best",
@@ -158,6 +148,7 @@ coords(
           "sensitivity",
           "specificity"))
 
+pred_class <- ifelse(prob_test > 0.295, 1, 0)
 
 confusionMatrix(
   factor(pred_class, levels = c(0,1)),
@@ -174,17 +165,10 @@ cours_troncons <- st_read("processed_data/cours_eau_final.gpkg")
 ##### Traitement des NA #####
 vars_rf <- c(
   "surface_m",
-  "StrahlMax",
-  "StrahlMin",
-  "CdNatureMa",
   "altitude_moy",
   "temp_moy",
   "pente_pct",
-  "ox_dis_moy",
-  "ammonium_moy",
-  "nitrates_moy",
-  "ph_moy"
-)
+  "ox_dis_moy")
 
 attributs <- st_drop_geometry(cours_troncons)
 
@@ -216,7 +200,7 @@ hist(troncons_ok$proba_presence)
 
 ##### Préparation fichier pour carte #####
 
-seuil <- 0.205 #seuil défini par les caractéristiques du modèle 
+seuil <- 0.295 #seuil défini par les caractéristiques du modèle 
 
 troncons_ok$predic <- ifelse(troncons_ok$proba_presence >= seuil, 1, 0)
 

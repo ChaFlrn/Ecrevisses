@@ -130,7 +130,11 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
          Nom_scientifique = str_remove(Nom_scientifique, "\\s*\\([^\\)]*\\)"),
          
          Presence = dplyr::recode(Presence,
-                           "présent" = "Présent")) %>%
+                           "présent" = "Présent",
+                           "oui" = "Présent",
+                           "non" = "Absent",
+                           "Oui" = "Présent"),
+         Presence = if_else(is.na(Presence), "Présent", Presence)) %>%
   filter(Cdnom != "65899") # Supression de l'écrevisse de terre (courtillère)
   
 
