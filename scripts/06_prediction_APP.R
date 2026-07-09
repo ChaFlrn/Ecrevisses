@@ -9,13 +9,17 @@ data_acp <- data_APP_propre %>%
   st_set_geometry(NULL) %>%
   mutate(Presence_bin = ifelse(Presence_APP == "Absence", 0, 1),
          CdNatureMa = as.numeric(CdNatureMa),
-         across(where(is.numeric), ~ replace_na(.x, 0))) %>%
+         across(where(is.numeric), ~ replace_na(.x, 0)),
+         classe_bio = replace_na(classe, "0"),
+         classe_bio = if_else(classe_bio == "U", "0", classe_bio),
+         classe_bio = as.numeric(classe_bio)) %>%
   select(Presence_bin,
          surface_m,
          altitude_moy,
          temp_moy,
          pente_pct,
-         ox_dis_moy)
+         ox_dis_moy,
+         classe_bio)
 
 
 acp <- dudi.pca(data_acp %>%
@@ -58,9 +62,8 @@ mod_glm <- glm(
     pente_pct +
     temp_moy +
     ox_dis_moy +
-    StrahlMax +
     surface_m +
-    CdNatureMa,
+    classe_bio,
   family = binomial,
   data = data_std
 )
@@ -148,7 +151,7 @@ coords(
           "sensitivity",
           "specificity"))
 
-pred_class <- ifelse(prob_test > 0.295, 1, 0)
+pred_class <- ifelse(prob_test > 0.337, 1, 0)
 
 confusionMatrix(
   factor(pred_class, levels = c(0,1)),
@@ -162,13 +165,15 @@ cli::cli_h1("Prédiction régionale")
 
 cours_troncons <- st_read("processed_data/cours_eau_final.gpkg")
 
+
 ##### Traitement des NA #####
 vars_rf <- c(
   "surface_m",
   "altitude_moy",
   "temp_moy",
   "pente_pct",
-  "ox_dis_moy")
+  "ox_dis_moy",
+  "classe_bio")
 
 attributs <- st_drop_geometry(cours_troncons)
 
@@ -181,14 +186,12 @@ rf_final <- randomForest(
   factor(Presence_bin) ~ .,
   data = data_acp,
   importance = TRUE,
-  ntree = 1000
-)
+  ntree = 1000)
 
 proba <- predict(
   rf_final,
   newdata = troncons_ok,
-  type = "prob"
-)
+  type = "prob")
 
 
 troncons_ok$proba_presence <- proba[,"1"]
@@ -200,7 +203,7 @@ hist(troncons_ok$proba_presence)
 
 ##### Préparation fichier pour carte #####
 
-seuil <- 0.295 #seuil défini par les caractéristiques du modèle 
+seuil <- 0.337 #seuil défini par les caractéristiques du modèle 
 
 troncons_ok$predic <- ifelse(troncons_ok$proba_presence >= seuil, 1, 0)
 

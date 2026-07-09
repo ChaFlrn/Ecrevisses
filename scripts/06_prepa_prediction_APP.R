@@ -334,6 +334,40 @@ save(cours_eau_bv, file = "processed_data/cours_eau_bv.RData")
 load(file = "processed_data/cours_eau_bv.RData")
 
 
+##### Etat biologique/écologique des masses d'eau ######
+# Bassin Adour-Garonne
+data_adour_garonne <- read.csv2(file = "assets/etats.csv",
+                                fileEncoding = "latin1")
+
+data_adour_garonne <- data_adour_garonne %>%
+  filter(code_alteration == "B_BIO") %>%
+  group_by(station) %>%
+  slice(1) %>%
+  ungroup() %>%
+  select(station,
+         nom_station,
+         classe)
+
+# Bassin Loire-Bretagne
+data_loire_bzh <- read.csv2(file = "assets/etat_bio_lb_2023.csv",
+                            fileEncoding = "latin1")
+
+data_loire_bzh <- data_loire_bzh %>%
+  select(station = Code.station,
+         nom_station = Libellé.station,
+         classe = Etat_bio)
+
+# Assemblage fichiers
+
+data_age <- rbind(data_adour_garonne,
+                  data_loire_bzh)
+
+data_age <- data_age %>%
+  mutate(station = as.character(station),
+         station = paste0("0", station))
+
+save(data_age, file = "processed_data/data_age.RData")
+
 ####-------------------Assemblage données----------------------------####
 cli::cli_h1("Récupérer les données environnementales")
 
@@ -354,7 +388,9 @@ data_APP_propre <- data_APP_final %>%
             by = c("Id" = "id_station")) %>%
   left_join(stations_quali %>%
               select(-n),
-            by = c("code_station_hubeau" = "code_station"))
+            by = c("code_station_hubeau" = "code_station")) %>%
+  left_join(data_age,
+            by = c("code_station_hubeau" = "station"))
 
 
 save(data_APP_propre, file = "processed_data/data_APP_propre.RData")
@@ -483,13 +519,25 @@ st_write(quali_na, "processed_data/quali_na.gpkg",
          append = FALSE,
          driver = "GPKG")
 
+load(file = "processed_data/data_age.RData")
+
+quali_bio_na <- quali_na %>%
+  left_join(data_age,
+            by = c("code_station" = "station"))
+
+
 
 ##### Fichier cours d'eau final #####
 
-cours_troncons <- st_join(
-  cours_eau_bv,
-  quali_na,
-  join = st_nearest_feature)
+cours_troncons <- cours_eau %>%
+  st_join(quali_bio_na,
+          join = st_nearest_feature) %>%
+  mutate(classe_bio = replace_na(classe, "0"),
+         classe_bio = if_else(classe_bio == "U", "0", classe_bio),
+         classe_bio = as.numeric(classe_bio)) %>%
+  select(-classe)
+
+
 
 st_write(cours_troncons, "processed_data/cours_eau_final.gpkg",
          append = FALSE,
