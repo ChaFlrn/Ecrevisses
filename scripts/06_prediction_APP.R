@@ -144,12 +144,10 @@ auc(roc_test)
 
 
 ##### Probabilité absence/présence #####
-coords(
-  roc_test,
-  "best",
-  ret = c("threshold",
-          "sensitivity",
-          "specificity"))
+coords(roc_test, 
+       "best",
+       best.method = "youden")
+
 
 pred_class <- ifelse(prob_test > 0.337, 1, 0)
 
@@ -158,7 +156,6 @@ confusionMatrix(
   factor(test$Presence_bin, levels = c(0,1)),
   positive = "1"
 )
-
 
 ####--------------------Prédiction régionale---------------------####
 cli::cli_h1("Prédiction régionale")
@@ -175,9 +172,10 @@ vars_rf <- c(
   "ox_dis_moy",
   "classe_bio")
 
-attributs <- st_drop_geometry(cours_troncons)
 
-troncons_ok <- cours_troncons[complete.cases(attributs[, vars_rf]),]
+troncons_ok <- cours_troncons %>%
+  filter(if_all(all_of(vars_rf), ~ !is.na(.))) %>%
+  st_drop_geometry(NULL)
 
 
 ##### Prédictions #####
@@ -191,10 +189,11 @@ rf_final <- randomForest(
 proba <- predict(
   rf_final,
   newdata = troncons_ok,
-  type = "prob")
+  type = "prob")[,"1"]
 
 
-troncons_ok$proba_presence <- proba[,"1"]
+troncons_ok$proba_presence <- proba
+
 
 summary(troncons_ok$proba_presence)
 
@@ -207,9 +206,20 @@ seuil <- 0.337 #seuil défini par les caractéristiques du modèle
 
 troncons_ok$predic <- ifelse(troncons_ok$proba_presence >= seuil, 1, 0)
 
+table(troncons_ok$predic)
+
+
+# Seuils naturels (Jenks) en fonction du seuil de Youden
+
+groupe_bas <- proba[proba < seuil]
+groupe_haut <- proba[proba >= seuil]
+ 
+jenks_bas <- classIntervals(groupe_bas, n = 2, style = "jenks") # détermination des seuils de classes "très faible" et "faible"
+jenks_haut <- classIntervals(groupe_haut, n = 3, style = "jenks") # classes "moyen", "favorable", "très favorable"
+
 troncons_ok$classe_habitat <- cut(
   troncons_ok$proba_presence,
-  breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+  breaks = c(0, 0.168, 0.337, 0.495, 0.669, 1),
   include.lowest = TRUE,
   labels = c(
     "Très faible",
@@ -219,17 +229,18 @@ troncons_ok$classe_habitat <- cut(
     "Très favorable"))
 
 
-##### Carte simple #####
-ggplot(troncons_ok) +
-  geom_sf(aes(color = proba_presence))
-
-
-
 
 ####----------------------------Sauvegarde---------------------------------####
 cli::cli_h1("Sauvegarde du fichier pour QGIS")
 
-st_write(troncons_ok, "processed_data/cours_eau_predict.gpkg",
+cours_eau_predict <- troncons_ok %>%
+  left_join(cours_troncons %>%
+              select(cleabs,
+                     geom),
+            by = "cleabs")
+
+
+st_write(cours_eau_predict, "processed_data/cours_eau_predict.gpkg",
          append = FALSE,
          driver = "GPKG")
 
