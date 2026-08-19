@@ -135,7 +135,8 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
                            "non" = "Absent",
                            "Oui" = "Présent"),
          Presence = if_else(is.na(Presence), "Présent", Presence)) %>%
-  filter(Cdnom != "65899") # Supression de l'écrevisse de terre (courtillère)
+  filter(Cdnom != "65899",
+         Cdnom != "320575") # Supression de l'écrevisse de terre (courtillère) et calicot (données éronées)
   
 
 ###---------------------------------------------------------#

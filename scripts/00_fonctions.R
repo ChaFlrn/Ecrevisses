@@ -154,3 +154,48 @@ telecharger_temperature <- function(code_station){
   dat$data
 }
 
+
+# Regrouper les sites APP
+
+regrouper_points <- function(data, distance = 500) {
+  
+  if (nrow(data) == 1) {
+    data$site_local <- 1
+    return(data)
+  }
+  
+  voisins <- st_is_within_distance(
+    data,
+    data,
+    dist = distance
+  )
+  
+  edges <- do.call(
+    rbind,
+    lapply(seq_along(voisins), function(i) {
+      
+      j <- voisins[[i]]
+      j <- j[j > i]
+      
+      if (length(j) > 0) {
+        cbind(i, j)
+      }
+    })
+  )
+  
+  g <- make_empty_graph(
+    n = nrow(data),
+    directed = FALSE
+  )
+  
+  if (!is.null(edges) && nrow(edges) > 0) {
+    g <- add_edges(
+      g,
+      as.vector(t(edges))
+    )
+  }
+  
+  data$site_local <- components(g)$membership
+  
+  data
+}

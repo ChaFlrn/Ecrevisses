@@ -96,7 +96,7 @@ load(file = "processed_data/data_APP_final.RData")
 ####-------------------Données environnementales----------------------------####
 cli::cli_h1("Récupérer les données environnementales")
 
-##### Données alitude et pente #####
+##### Données altitude et pente #####
 departements <- st_read("assets/departements.gpkg")
 
 # Téléchargement DEM, peut prendre du temps en fonction de la taille du territoire

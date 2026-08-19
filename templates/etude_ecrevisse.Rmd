@@ -333,10 +333,6 @@ esp_18437 <- bdd_ecrevisse %>%
   filter(Cdnom == 18437) %>%
   st_point_on_surface()
 
-esp_320575 <- bdd_ecrevisse %>%
-  filter(Cdnom == 320575) %>%
-  st_point_on_surface()
-
 
 carte_esp1 <- ggplot(esp_162666) +
   geom_sf(data = departements,
@@ -429,20 +425,6 @@ carte_esp6 <- ggplot(esp_18437) +
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         legend.position = "none")
 
-carte_esp7  <- ggplot(esp_320575) +
-  geom_sf(data = departements,
-          fill = "grey95", color = "black", size = 0.3) +
-  geom_sf(aes(geometry = geom, fill = Nom_vernaculaire),
-          color = "black",
-          alpha = 0.85, 
-          size = 3, 
-          shape = 21) +
-  scale_fill_manual(values = colors_esp) +
-  labs(title = "Écrevisses calicot") +
-  theme_void(base_size = 9) +
-  theme(text = element_text(size = 10),
-        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "none")
 ```
 
 Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquitaine. Les dynamiques de populations seront étudiées plus tard dans le rapport.
@@ -450,7 +432,7 @@ Distributions spatiales des saisies des espèces dans la région Nouvelle-Aquita
 
 ```{r, fig.width = 15, fig.height = 15}
 # Faire un seul graphique avec les 6 cartes
-(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4 | carte_esp7)
+(carte_esp1 | carte_esp5 | carte_esp6) / (carte_esp2 | carte_esp3 | carte_esp4)
 ```
 
 \newpage
