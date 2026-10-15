@@ -12,7 +12,7 @@ cli::cli_h1("Assembler et trier le fichier")
 data_astaq <- data_astaq %>%
   mutate(Date = substr(date, 1,4),
          Date_precis = as.Date(date),
-         Cdnom = recode(releve_ecrevisse_espece,
+         Cdnom = dplyr::recode(releve_ecrevisse_espece,
                         "102" = "162666",
                         "104" = "17646",
                         "108" = "162667",

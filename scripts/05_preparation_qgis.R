@@ -58,17 +58,20 @@ cli::cli_h1("Fichiers concernant les statuts d'espèces")
 data_statut_inf_2015 <- bdd_ecrevisse %>%
   st_point_on_surface() %>%
   st_cast("POINT") %>%
-  filter(Date < "2015") 
+  filter(Date < "2015",
+         Presence == "Présent") 
 
 data_statut_2015 <- bdd_ecrevisse %>%
   st_point_on_surface() %>%
   st_cast("POINT") %>%
-  filter(Date >= "2015" & Date <= "2020") 
+  filter(Date >= "2015" & Date <= "2020",
+         Presence == "Présent") 
 
 data_statut_2020 <- bdd_ecrevisse %>%
   st_point_on_surface() %>%
   st_cast("POINT") %>%
-  filter(Date > "2020") 
+  filter(Date > "2020",
+         Presence == "Présent") 
 
 
 st_write(data_statut_inf_2015, "processed_data/data_statut_inf_2015.gpkg", 
@@ -96,9 +99,16 @@ geom_type <- st_geometry_type(bdd_ecrevisse)
 
 data_APP <- bdd_ecrevisse %>%
   filter(Cdnom == "18437",
-         geom_type %in% c("POINT", "MULTIPOINT")) %>%
-  mutate(periode = if_else(Date >= "2020" & Presence == "Présent", "Apres_2020", "Avant_2020")) %>%
+         geom_type %in% c("POINT", "MULTIPOINT"),
+         Presence == "Présent") %>%
+  mutate(periode = if_else(Date >= "2020", "Apres_2020", "Avant_2020")) %>%
   st_centroid()
+
+
+st_write(data_APP, "processed_data/data_APP.gpkg", 
+         append = FALSE,
+         driver = "GPKG")
+
 
 
 cours_eau <- cours_eau %>%
@@ -141,4 +151,5 @@ data_APP_final <- data_APP_groupe %>%
 st_write(data_APP_final, "processed_data/data_APP_final.gpkg", 
          append = FALSE,
          driver = "GPKG")
+
 

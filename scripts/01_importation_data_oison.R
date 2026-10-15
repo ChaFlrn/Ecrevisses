@@ -1,9 +1,48 @@
 #%%%%%%%%%%%%%%%%%%%%% Importation données OISON %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+###---------------------------------------------------------#
+cli::cli_h1("Extraire automatiquement les données") 
+geom_NA <-
+  COGiter::regions_geo %>%
+  # filtre sur NA
+  dplyr::filter(REG == 75) %>%
+  sf::st_as_sfc() %>%
+  # convert to text
+  sf::st_as_text()
+
+string_geom_exemple <- paste0(substr(geom_NA,1,100), '....')
+
+
+# a) connexion
+bdd_oison <- start_sql_connexion()
+
+# b) requete
+oison_NA <-
+  get_table_taxon_sql(conn = bdd_oison,
+                      geometrie = geom_NA)
+
+# d) stop de la connexion
+stop_sql_connexion(conn = bdd_oison)
+
+
+# Filtrage
+oison_NA_ecrevisse <-
+  oison_NA %>%
+  # detection pattern 'creviss' et filtre
+  dplyr::filter(grepl('creviss', nom_vernaculaire))
+
+
+sf::write_sf(oison_NA_ecrevisse,
+             "raw_data/oison_ecrevisse.gpkg",
+             driver = "GPKG")
+
+
 ###---------------------------------------------------------#
 cli::cli_h1("Lire le fichier format .gpkg") 
 
 data_oison <- st_read("raw_data/oison_ecrevisse.gpkg")
+
 
 ###---------------------------------------------------------#
 cli::cli_h1("Ajouter les communes et départements") 

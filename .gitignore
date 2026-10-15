@@ -12,3 +12,4 @@ assets/
 *.txt
 *.gpkg
 *.tif
+*.shp

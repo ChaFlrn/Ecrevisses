@@ -48,41 +48,47 @@ load("processed_data/data_assec.RData")
 cli::cli_h1("Trier et filtrer la base de données") 
 
 data_assec <- data_assec_2012_2026 %>%
-  mutate(annee = as.Date(substr(date_observation, 1,4), "%Y")) %>%
-  arrange(code_cours_eau, annee, date_observation) %>%
-  group_by(code_cours_eau, annee) %>%
-  mutate(jour_prec = lag(date_observation),
-         nouveau_groupe = is.na(jour_prec) | date_observation != jour_prec +1 | code_ecoulement != 3,
-         groupe = cumsum(nouveau_groupe)) %>%
-  filter(code_ecoulement == 3) %>%
-  group_by(code_cours_eau, annee, groupe) %>%
-  summarise(date_debut_assec = min(date_observation),
-            date_fin_assec = max(date_observation),
-            nb_jours = as.numeric(date_fin_assec - date_debut_assec) + 1, .groups = "drop")
+  mutate(annee = year(date_observation),
+         mois = month(date_observation)) %>%
+  arrange(code_station, annee, mois) %>%
+  group_by(code_station, annee, mois) %>%
+  summarise(statut = if_else(any(code_ecoulement == "3"), "assec", "non_assec"),
+            .groups = "drop") %>%
+  group_by(code_station, annee) %>%
+  complete(mois = 1:12) %>%                      # <- correction 1 : mai à novembre
+  mutate(groupe = cumsum(replace_na(statut != "assec", TRUE))) %>%
+  ungroup() %>%
+  filter(statut == "assec") %>%                  # <- correction 2 : ne garder QUE les épisodes d'assec
+  group_by(code_station, annee, groupe) %>%
+  summarise(mois_debut = min(mois),
+            mois_fin = max(mois),
+            nb_mois_consecutif_assec = n(),
+            .groups = "drop") %>%
+  select(-groupe)
+
+save(data_assec, file = "processed_data/data_assec.RData")
+
+data_assec_select <- data_assec %>%
+  filter(nb_mois_consecutif_assec >= 2) %>%
+  group_by(code_station) %>%
+  mutate(derniere_annee = max(annee)) %>%
+  arrange(code_station, derniere_annee) %>%
+  slice(1) %>%
+  left_join(data_assec_2012_2026 %>%
+              select(code_station,
+                     libelle_station,
+                     code_cours_eau,
+                     libelle_cours_eau,
+                     code_departement,
+                     geometry) %>%
+              distinct(code_station, .keep_all = TRUE),
+            by = "code_station")
 
 
 
-
-
-
-
-
-departements <- st_read("assets/departements.gpkg")
-
-ggplot(data_assec) +
-  geom_sf(data = departements,
-          fill = "grey95", color = "black", size = 0.3) +
-  geom_sf(aes(geometry = geometry, fill = libelle_ecoulement),
-          color = "black",
-          alpha = 0.85, 
-          size = 3, 
-          shape = 21) +
-  theme_void() +
-  theme(text = element_text(size = 10),
-        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.position = "right",
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 12))
+st_write(data_assec_select, "processed_data/data_assec_select.gpkg", 
+         append = FALSE,
+         driver = "GPKG")
 
 
 

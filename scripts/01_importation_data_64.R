@@ -32,7 +32,7 @@ data_long <- data_64 %>%
 data_64 <- data_long %>%
   mutate(Date_precis = as.Date(Date),
          Date = substr(Date, 1,4),
-         Cdnom = recode(code_espece,
+         Cdnom = dplyr::recode(code_espece,
                         "PCC" = "162668",
                         "OCL" = "17646",
                         "PFL" = "162667",

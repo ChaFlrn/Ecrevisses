@@ -17,7 +17,7 @@ data_naiades <- data_naiades %>%
   mutate(Id = paste0("Naiades_", row_number()),
          Date = substr(DateDebutOperationPrelBio, 1,4),
          
-         Cdnom = recode(CdAppelTaxon,
+         Cdnom = dplyr::recode(CdAppelTaxon,
                         "2963" = "162666",
                         "68137" = "17646",
                         "873" = "162667",
@@ -106,7 +106,7 @@ data_naiades <- data_naiades %>%
 cli::cli_h1("Homogénéiser les variables") 
 
 data_naiades <- data_naiades %>%
-  mutate(Fournisseur = recode(Fournisseur,
+  mutate(Fournisseur = dplyr::recode(Fournisseur,
                        "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB)" = "OFB",
                        "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB)" = "OFB"))
 

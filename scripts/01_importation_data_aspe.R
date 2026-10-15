@@ -3,13 +3,13 @@
 ###---------------------------------------------------------#
 cli::cli_h1("Extraire les données de la base") 
 
-#aspe_db <- imp_connecter_aspe_idg()
+aspe_db <- imp_connecter_aspe_idg()
 
-#imp_importer_aspe_idg(aspe_db)
-#export_tables_rdata()
+imp_importer_aspe_idg(aspe_db)
+export_tables_rdata()
 
-load(file="processed_data/tables_sauf_mei_2026_01_14.RData")
-load(file="processed_data/mei_1_2026_01_14.RData")
+load(file="processed_data/tables_sauf_mei_2026_10_15_09_10_42.70979.RData")
+load(file="processed_data/mei_1_2026_10_15_09_11_06.063679.RData")
 
 ###---------------------------------------------------------#
 cli::cli_h1("Créer un jeu de données") 
@@ -55,7 +55,7 @@ cli::cli_h1("Harmoniser le fichier")
 data_aspe <- data_aspe %>%
   mutate(Id = paste0("Aspe_", row_number()),
          
-         Cdnom = recode(esp_code_sandre,
+         Cdnom = dplyr::recode(esp_code_sandre,
                                 "2963" = "162666",
                                 "68137" = "17646",
                                 "873" = "162667",
@@ -75,7 +75,7 @@ data_aspe <- data_aspe %>%
          Date_precis = substr(ope_date, 1,10),
          Fiabilite = "Valide",
          Source = "Aspe",
-         Fournisseur = recode(operateur_peche,
+         Fournisseur = dplyr::recode(operateur_peche,
                                             "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE NOUVELLE AQUITAINE (OFB)" = "OFB",
                                             "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE CENTRE VAL LOIRE (OFB)" = "OFB",
                               "OFFICE FRANCAIS DE LA BIODIVERSITE - OFB DIRECTION REGIONALE OCCITANIE (OFB)" = "OFB"),

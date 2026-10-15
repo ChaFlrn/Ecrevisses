@@ -15,16 +15,44 @@ data_polygones <- read_delim("raw_data/Polygon.csv",
 data_meta <- read_delim("raw_data/Metadonnees.csv",
                         delim = NULL)
 
+data_meta_5 <- read_delim("raw_data/Metadonnees_5.csv",
+                          delim = NULL)
+
+data_meta_10 <- read_delim("raw_data/Metadonnees_10.csv",
+                        delim = NULL)
+
+data_polygones_5 <- read_delim("raw_data/Polygon_oct_26_5.csv",
+                             delim = NULL)
+
+data_polygones_10 <- read_delim("raw_data/Polygon_oct_26_10.csv",
+                               delim = NULL)
+
 ###---------------------------------------------------------#
 cli::cli_h1("Rassembler les fichiers") 
 
 data_lignes <- st_as_sf(data_lignes, wkt = "GeomWkt")
 data_points <- st_as_sf(data_points, wkt = "GeomWkt")
 data_polygones <- st_as_sf(data_polygones, wkt = "GeomWkt")
+data_polygones_5 <- data_polygones_5 %>%
+  st_as_sf(wkt = "GeomWkt") %>%
+  select(-EtatBio,
+         -CauseEtatBio)
+
+data_polygones_10 <- data_polygones_10 %>%
+  st_as_sf(wkt = "GeomWkt") %>%
+  select(-EtatBio,
+         -CauseEtatBio)
+
 
 data_fauna <- rbind(data_lignes,
                     data_points,
-                    data_polygones)
+                    data_polygones,
+                    data_polygones_5,
+                    data_polygones_10)
+
+data_meta <- rbind(data_meta,
+                   data_meta_5,
+                   data_meta_10)
 
 
 ###---------------------------------------------------------#

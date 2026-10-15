@@ -97,12 +97,12 @@ Cette approche contribue à renforcer la capacité d'expertise régionale et à 
 
 La base de données de travail est une jointure de plusieurs bases distinctes :
 
-- **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 14/01/2026*
+- **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 05/10/2026*
 
 
 - **ASTAQUITAINE** : base de données réalisée dans le cadre du Programme Aquitain Ecrevisses à Pattes blanches. Elle centralise les données issues d'inventaires piscicoles par pêche électrique et d'inventaires astacicoles par prospection nocturne ou piégeage. *Date de l'extraction : 10/02/2026*
 
-- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 05/12/2025*
+- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 05/10/2026*
 
 
 - **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. *Date de l'extraction : 04/12/2025*
