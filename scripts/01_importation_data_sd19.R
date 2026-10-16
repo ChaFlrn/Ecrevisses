@@ -43,7 +43,7 @@ cli::cli_h1("Trier le fichier")
 
 data_sd19_propre <- data_sd19 %>%
   filter(!is.na(Espèce)) %>%
-  mutate(Date_precis = paste0(Année, "-01-01"),
+  mutate(Date_precis = as.Date(paste0(Année, "-01-01")),
          Id = paste0("SD19_", row_number()),
          Fournisseur = Source,
          Effectif = ifelse(is.na(Abondance), "Non renseigné", Abondance),
@@ -65,7 +65,16 @@ data_sd19_propre <- data_sd19 %>%
          Nom_vernaculaire = case_when(
            Cdnom == "162667" ~ "Ecrevisse de Californie",
            Cdnom == "17646" ~ "Ecrevisse americaine",
-           Cdnom == "18437" ~ "Ecrevisse a pieds blancs")) %>%
+           Cdnom == "18437" ~ "Ecrevisse a pieds blancs"),
+         
+         Fournisseur = dplyr::recode(Fournisseur,
+                                     "Roqueplot GuÃ©net" = "Roqueplot Guénet",
+                                     "Village du Midi CorrÃ©zien" = "Village du Midi Corrézien",
+                                     "OFB EF JD" = "OFB",
+                                     "OFB EF LH" = "OFB")) %>%
+  
+  st_transform(crs = 2154) %>%
+  
   
   select(Id,
          Date = Année,

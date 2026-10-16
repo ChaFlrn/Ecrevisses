@@ -74,6 +74,9 @@ data_naiades <- st_read("../processed_data/data_naiades.gpkg")
 data_aspe <- st_read("../processed_data/data_aspe.gpkg")
 data_astaq <- st_read("../processed_data/data_astaq.gpkg")
 data_sd86 <- st_read("../processed_data/data_sd86.gpkg")
+data_sd19 <- st_read("../processed_data/data_sd19.gpkg")
+data_sd47 <- st_read("../processed_data/data_sd47.gpkg")
+
 
 ```
 \newpage
@@ -97,15 +100,15 @@ Cette approche contribue à renforcer la capacité d'expertise régionale et à 
 
 La base de données de travail est une jointure de plusieurs bases distinctes :
 
-- **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 05/10/2026*
+- **ASPE** : base interne de l'OFB, les données sont collectées lors d'opérations de pêches scientifiques à l'électricité. *Date de l'extraction : 15/10/2026*
 
 
 - **ASTAQUITAINE** : base de données réalisée dans le cadre du Programme Aquitain Ecrevisses à Pattes blanches. Elle centralise les données issues d'inventaires piscicoles par pêche électrique et d'inventaires astacicoles par prospection nocturne ou piégeage. *Date de l'extraction : 10/02/2026*
 
-- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 05/10/2026*
+- **OISON** : base interne de l'OFB, les agents saisissent directement sur le terrain les observations relatives aux espèces et aux milieux. Les données collectées sont majoritairement le résultat d'observations opportunistes ou fortuites, mais elles peuvent également être issues de la mise en oeuvre de protocoles. *Date de l'extraction : 15/10/2026*
 
 
-- **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. *Date de l'extraction : 04/12/2025*
+- **Observatoire FAUNA** : pôle de gestion de données sur la faune sauvage de Nouvelle-Aquitaine. C'est une unité de service et une plateforme de recherche labellisée de l'université de Bordeaux fonctionnant avec l'appui de la DREAL Nouvelle-Aquitaine. Cela constitue la plateforme SINP régionale pour la Nouvelle-Aquitaine. *Date de l'extraction : 16/10/2026*
 
 
 - **NAIADES** : portail regroupant les données sur la qualité des eaux de surface (hydrobiologie, physicochimie, hydromorphologie), recueillies par les agences de l'eau, les offices de l'eau et l'OFB. *Date de l'extraction : 19/12/2025*
@@ -113,13 +116,13 @@ La base de données de travail est une jointure de plusieurs bases distinctes :
 
 - **FDAAPPMA 64** : données issues pour partie de la base de données Géopikaia. *Date de l'extraction : 07/02/2026*
 
-Un traitement des données avant et après jointure a été réalisé en supprimant des données OFB et autres doublons. Dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE, NAIADES et ASTAQUITAINE. Cela a conduit à la suppression de **894 doublons**.
+Un traitement des données avant et après jointure a été réalisé en supprimant des données OFB et autres doublons. Dans la base FAUNA, une partie des données OFB étaient déjà présentes (remontée des données via le SINP), il faut donc supprimer ces doublons pour limiter les biais. Les doublons ont été identifiés par croisement selon plusieurs variables : la date journalière, le code identifiant de l'espèce et les coordonnées gps. Ce même processus est appliqué entre les bases ASPE, NAIADES et ASTAQUITAINE. Cela a conduit à la suppression de **3133 doublons**.
 La base finale est donc constituée de **`r nrow(bdd_ecrevisse)`** données d'observations d'écrevisses sur l'ensemble de la région Nouvelle-Aquitaine.
 
 ```{r, fig.width = 6, fig.height = 4}
 tablo_data <- data.frame(
   Base = c("ASPE", "ASTAQUITAINE","FAUNA","FDAAPPMA 64", "NAIADES","OISON"),
-  Donnees_brutes = c(nrow(data_aspe), nrow(data_astaq), nrow(data_fauna), nrow(data_64), nrow(data_naiades),nrow(data_oison)),
+  Donnees_brutes = c(nrow(data_aspe), nrow(data_astaq), nrow(data_fauna), nrow(data_64), nrow(data_naiades),nrow(data_oison) + nrow(data_sd19) + nrow(data_sd47) + nrow(data_sd86)),
   stringsAsFactors = FALSE)
 
 # Créer tableau pour rapport
@@ -129,10 +132,10 @@ tablo_data <- tablo_data %>%
 flextable(tablo_data) %>%
   set_header_labels(
     Base = "Base de données",
-    Donnees_brutes = "Données traitées") %>%
+    Donnees_brutes = "Données brutes") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_data), align = "center", part = "all") %>%   
   autofit()
@@ -176,7 +179,7 @@ flextable(tablo_synt_esp) %>%
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_synt_esp), align = "center", part = "all") %>% 
   fontsize(part = "header", size = 11) %>%
@@ -197,7 +200,8 @@ tablo_contrib <- bdd_ecrevisse %>%
          pourcentage = round((nb_saisies / total)*100,3)) %>%
   select(- total) %>%
   arrange(desc(pourcentage)) %>%
-  filter(!is.na(Fournisseur))
+  filter(!is.na(Fournisseur),
+         Fournisseur != "")
 
 
 # Créer tableau pour rapport
@@ -211,7 +215,7 @@ flextable(tablo_contrib) %>%
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_contrib), align = "center", part = "all") %>% 
   fontsize(part = "header", size = 10) %>%
@@ -311,26 +315,32 @@ ggplot(histo_synt_esp) +
 
 ```{r}
 esp_162666 <- bdd_ecrevisse %>%
-  filter(Cdnom == 162666) %>%
+  filter(Cdnom == 162666,
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 esp_162667 <- bdd_ecrevisse %>%
-  filter(Cdnom == 162667) %>%
+  filter(Cdnom == 162667,
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 esp_162668 <- bdd_ecrevisse %>%
-  filter(Cdnom == 162668) %>%
+  filter(Cdnom == 162668,
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 esp_17646 <- bdd_ecrevisse %>%
-  filter(Cdnom == 17646) %>%
+  filter(Cdnom == 17646,
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 esp_18432 <- bdd_ecrevisse %>%
-  filter(Cdnom == 18432)
+  filter(Cdnom == 18432,
+         Presence == "Présent")
 
 esp_18437 <- bdd_ecrevisse %>%
-  filter(Cdnom == 18437) %>%
+  filter(Cdnom == 18437,
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -460,7 +470,7 @@ flextable(data_valid) %>%
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(data_valid), align = "center", part = "all") %>%  
   fontsize(part = "header", size = 11) %>%
@@ -502,7 +512,7 @@ flextable(carac_esp) %>%
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(carac_esp), align = "center", part = "all") %>%  
   fontsize(part = "header", size = 11) %>%
@@ -521,7 +531,8 @@ Cela met en lumière l'importance de la qualité de la donnée, un non-remplissa
 bdd_effectif <- bdd_ecrevisse %>%
   mutate(Observations = as.numeric(Effectif)) %>%
   filter(!is.na(Observations),
-         !is.na(Date) & Date !="")
+         !is.na(Date) & Date !="",
+         Presence == "Présent")
 
 carac_esp_spe <- bdd_effectif %>%
   st_set_geometry(NULL) %>%
@@ -555,7 +566,7 @@ flextable(carac_esp_spe) %>%
     nb_obs_2025 = "Individus \naprès 2020") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(carac_esp_spe), align = "center", part = "all") %>%  
   fontsize(part = "header", size = 11) %>%
@@ -575,19 +586,23 @@ colors_statut <- c(
 
 
 pop_eee_2005 <- bdd_ecrevisse %>%
-  filter(Date <= "2005" & Statut == "Espèce envahissante") %>%
+  filter(Date <= "2005" & Statut == "Espèce envahissante",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_eee_2015 <- bdd_ecrevisse %>%
-  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce envahissante") %>%
+  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce envahissante",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_eee_2020 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce envahissante") %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce envahissante",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_eee_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2020" & Statut == "Espèce envahissante") %>%
+  filter(Date > "2020" & Statut == "Espèce envahissante",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 carte_eee_2005 <- ggplot(pop_eee_2005) +
@@ -657,19 +672,23 @@ carte_eee_2025 <- ggplot(pop_eee_2025) +
 
 ```{r}
 pop_aut_2005 <- bdd_ecrevisse %>%
-  filter(Date <= "2005" & Statut == "Espèce autochtone") %>%
+  filter(Date <= "2005" & Statut == "Espèce autochtone",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_aut_2015 <- bdd_ecrevisse %>%
-  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce autochtone") %>%
+  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce autochtone",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_aut_2020 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce autochtone") %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce autochtone",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_aut_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2020" & Statut == "Espèce autochtone") %>%
+  filter(Date > "2020" & Statut == "Espèce autochtone",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 carte_aut_2005 <- ggplot(pop_aut_2005) +
@@ -737,19 +756,23 @@ carte_aut_2025 <- ggplot(pop_aut_2025) +
 
 ```{r}
 pop_rep_2005 <- bdd_ecrevisse %>%
-  filter(Date <= "2005" & Statut == "Espèce représentée") %>%
+  filter(Date <= "2005" & Statut == "Espèce représentée",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_rep_2015 <- bdd_ecrevisse %>%
-  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce représentée") %>%
+  filter(Date > "2005" & Date <= "2015" & Statut == "Espèce représentée",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_rep_2020 <- bdd_ecrevisse %>%
-  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce représentée") %>%
+  filter(Date > "2015" & Date <= "2020" & Statut == "Espèce représentée",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_rep_2025 <- bdd_ecrevisse %>%
-  filter(Date > "2020" & Statut == "Espèce représentée") %>%
+  filter(Date > "2020" & Statut == "Espèce représentée",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 carte_rep_2005 <- ggplot(pop_rep_2005) +
@@ -857,19 +880,23 @@ max_eff <- max(breaks_fixed)
 
 
 pop_18437_2005 <- bdd_effectif %>%
-  filter(Date <= "2005" & Cdnom == "18437") %>%
+  filter(Date <= "2005" & Cdnom == "18437",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_18437_2015 <- bdd_effectif %>%
-  filter(Date > "2005" & Date <= "2015" & Cdnom == "18437") %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "18437",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_18437_2020 <- bdd_effectif %>%
-  filter(Date > "2015" & Date <= "2020" & Cdnom == "18437") %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "18437",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_18437_2025 <- bdd_effectif %>%
-  filter(Date > "2020" & Cdnom == "18437") %>%
+  filter(Date > "2020" & Cdnom == "18437",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -959,19 +986,23 @@ carte_18437_2025 <- ggplot(pop_18437_2025) +
 
 ```{r}
 pop_17646_2005 <- bdd_effectif %>%
-  filter(Date <= "2005" & Cdnom == "17646") %>%
+  filter(Date <= "2005" & Cdnom == "17646",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_17646_2015 <- bdd_effectif %>%
-  filter(Date > "2005" & Date <= "2015" & Cdnom == "17646") %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "17646",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_17646_2020 <- bdd_effectif %>%
-  filter(Date > "2015" & Date <= "2020" & Cdnom == "17646") %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "17646",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_17646_2025 <- bdd_effectif %>%
-  filter(Date > "2020" & Cdnom == "17646") %>%
+  filter(Date > "2020" & Cdnom == "17646",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -1061,19 +1092,23 @@ carte_17646_2025 <- ggplot(pop_17646_2025) +
 
 ```{r}
 pop_162666_2005 <- bdd_effectif %>%
-  filter(Date <= "2005" & Cdnom == "162666") %>%
+  filter(Date <= "2005" & Cdnom == "162666",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162666_2015 <- bdd_effectif %>%
-  filter(Date > "2005" & Date <= "2015" & Cdnom == "162666") %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162666",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162666_2020 <- bdd_effectif %>%
-  filter(Date > "2015" & Date <= "2020" & Cdnom == "162666") %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162666",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162666_2025 <- bdd_effectif %>%
-  filter(Date > "2020" & Cdnom == "162666") %>%
+  filter(Date > "2020" & Cdnom == "162666",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -1164,19 +1199,23 @@ carte_162666_2025 <- ggplot(pop_162666_2025) +
 
 ```{r}
 pop_162667_2005 <- bdd_effectif %>%
-  filter(Date <= "2005" & Cdnom == "162667") %>%
+  filter(Date <= "2005" & Cdnom == "162667",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162667_2015 <- bdd_effectif %>%
-  filter(Date > "2005" & Date <= "2015" & Cdnom == "162667") %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162667",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162667_2020 <- bdd_effectif %>%
-  filter(Date > "2015" & Date <= "2020" & Cdnom == "162667") %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162667",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162667_2025 <- bdd_effectif %>%
-  filter(Date > "2015" & Cdnom == "162667") %>%
+  filter(Date > "2015" & Cdnom == "162667",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -1266,19 +1305,23 @@ carte_162667_2025 <- ggplot(pop_162667_2025) +
 
 ```{r}
 pop_162668_2005 <- bdd_effectif %>%
-  filter(Date <= "2005" & Cdnom == "162668") %>%
+  filter(Date <= "2005" & Cdnom == "162668",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162668_2015 <- bdd_effectif %>%
-  filter(Date > "2005" & Date <= "2015" & Cdnom == "162668") %>%
+  filter(Date > "2005" & Date <= "2015" & Cdnom == "162668",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162668_2020 <- bdd_effectif %>%
-  filter(Date > "2015" & Date <= "2020" & Cdnom == "162668") %>%
+  filter(Date > "2015" & Date <= "2020" & Cdnom == "162668",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 pop_162668_2025 <- bdd_effectif %>%
-  filter(Date > "2015" & Cdnom == "162668") %>%
+  filter(Date > "2015" & Cdnom == "162668",
+         Presence == "Présent") %>%
   st_point_on_surface()
 
 
@@ -1421,15 +1464,11 @@ cartes_162667 / cartes_162668 / cartes_17646
 \newpage
 
 ### Par données d'absence
-Le tableau ci-dessous présente le nombre de données en fonction de la présence ou non d'individus lors de la prospection. Ces données d'absence ne sont disponibles que pour celles provenant de la base OISON. En effet, dans la base de données FAUNA, l'ensemble des saisies étaient marquées comme "présentes".
-***Seule l'écrevisse à pieds blancs contient un statut absent dans la base de données.***
+Le tableau ci-dessous présente le nombre de données en fonction de la présence ou non d'individus lors de la prospection. Ces données d'absence ne sont pas disponibles pour l'ensemble des bases de données étudiées.
 
 ```{r, fig.width = 18, fig.height = 18}
 tablo_abs <- bdd_ecrevisse %>%
   st_set_geometry(NULL) %>%
-  mutate(Presence = dplyr::recode(Presence,
-                           "oui" = "Présent",
-                           "non" = "Absent")) %>%
   group_by(Presence) %>%
   summarise(total = n(), .groups = "drop") %>%
   mutate(pourcentage = round((total / sum(total))*100,2)) %>%
@@ -1446,7 +1485,7 @@ flextable(tablo_abs) %>%
     pourcentage = "Pourcentage de contribution") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(tablo_abs), align = "center", part = "all") %>% 
   fontsize(part = "header", size = 11) %>%
@@ -1508,7 +1547,7 @@ flextable(tablo_pression_obs) %>%
     nb_especes = "Nombre d'espèces saisies") %>%
   theme_vanilla() %>%
   color(part = "header", color = "white") %>%
-  bg(part = "header", bg = "#333333") %>%
+  bg(part = "header", bg = "#0083CB") %>%
   bold(part = "header") %>% 
   align(j = colnames(pression_obs), align = "center", part = "all") %>% 
   fontsize(part = "header", size = 11) %>%

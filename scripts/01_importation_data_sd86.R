@@ -19,7 +19,7 @@ data_sd86_propre <- data_sd86 %>%
   filter(!is.na(Lambert_93_X)) %>%
   st_as_sf(coords = c("Lambert_93_X", "Lambert_93_Y"), 
            crs = 2154) %>%
-  mutate(Date_precis = paste0(Année, "-01-01"),
+  mutate(Date_precis = as.Date(paste0(Année, "-01-01")),
          Id = paste0("SD86_", row_number()),
          Fournisseur = "SD 86 et Partenaires",
          Effectif = "Non renseigné",

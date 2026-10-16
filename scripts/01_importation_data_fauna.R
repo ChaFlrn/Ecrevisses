@@ -3,64 +3,28 @@
 ###---------------------------------------------------------#
 cli::cli_h1("Lire les fichiers format .csv") 
 
-data_lignes <- read_delim("raw_data/Linestring.csv",
-                          delim = NULL)
+data_points <- read.csv2("raw_data/Point_16_10_26.csv",
+                          header = TRUE,
+                          sep = "\t")
 
-data_points <- read_delim("raw_data/Point.csv",
-                          delim = NULL)
+data_meta <- read.csv2("raw_data/Metadonnees_16_10.csv",
+                        header = TRUE,
+                        sep = "\t")
 
-data_polygones <- read_delim("raw_data/Polygon.csv",
-                         delim = NULL)
-
-data_meta <- read_delim("raw_data/Metadonnees.csv",
-                        delim = NULL)
-
-data_meta_5 <- read_delim("raw_data/Metadonnees_5.csv",
-                          delim = NULL)
-
-data_meta_10 <- read_delim("raw_data/Metadonnees_10.csv",
-                        delim = NULL)
-
-data_polygones_5 <- read_delim("raw_data/Polygon_oct_26_5.csv",
-                             delim = NULL)
-
-data_polygones_10 <- read_delim("raw_data/Polygon_oct_26_10.csv",
-                               delim = NULL)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Rassembler les fichiers") 
 
-data_lignes <- st_as_sf(data_lignes, wkt = "GeomWkt")
 data_points <- st_as_sf(data_points, wkt = "GeomWkt")
-data_polygones <- st_as_sf(data_polygones, wkt = "GeomWkt")
-data_polygones_5 <- data_polygones_5 %>%
-  st_as_sf(wkt = "GeomWkt") %>%
-  select(-EtatBio,
-         -CauseEtatBio)
-
-data_polygones_10 <- data_polygones_10 %>%
-  st_as_sf(wkt = "GeomWkt") %>%
-  select(-EtatBio,
-         -CauseEtatBio)
-
-
-data_fauna <- rbind(data_lignes,
-                    data_points,
-                    data_polygones,
-                    data_polygones_5,
-                    data_polygones_10)
-
-data_meta <- rbind(data_meta,
-                   data_meta_5,
-                   data_meta_10)
 
 
 ###---------------------------------------------------------#
 cli::cli_h1("Récupérer les contributeurs et trier la base")
 
-data_fauna <- data_fauna %>%
+data_fauna <- data_points %>%
   left_join(data_meta, by = c("IdJdd" = "IdJeuDonnees")) %>%
   mutate(Date = substr(DateDebut, 1,4),
+         Date_precis = as.Date(DateDebut),
          Cdnom = as.character(CdNomCite),
          Fournisseur = case_when(
            is.na(Fournisseur) ~ str_extract(Observer, "(?<=\\().+?(?=\\))"),
@@ -72,7 +36,7 @@ data_fauna <- data_fauna %>%
          Source = "FAUNA") %>%
   select(Id = IdRegional,
          Date,
-         Date_precis = DateDebut,
+         Date_precis,
          Cdnom,
          Nom_vernaculaire = TaxNomVern,
          Nom_scientifique = TaxNomVal,

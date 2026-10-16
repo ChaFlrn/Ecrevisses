@@ -17,6 +17,11 @@ data_64 <- st_read("processed_data/data_64.gpkg")
 
 data_sd86 <- st_read("processed_data/data_sd86.gpkg")
 
+data_sd19 <- st_read("processed_data/data_sd19.gpkg")
+
+data_sd47 <- st_read("processed_data/data_sd47.gpkg")
+
+
 departements <- st_read("assets/departements.gpkg")
 
 
@@ -99,7 +104,9 @@ bdd_ecrevisse <- rbind(data_oison,
                        data_aspe,
                        data_astaq,
                        data_64,
-                       data_sd86)
+                       data_sd86,
+                       data_sd19,
+                       data_sd47)
 
 ###---------------------------------------------------------#
 cli::cli_h1("Nettoyage du fichier")
@@ -133,7 +140,8 @@ bdd_ecrevisse <- bdd_ecrevisse %>%
                            "présent" = "Présent",
                            "oui" = "Présent",
                            "non" = "Absent",
-                           "Oui" = "Présent"),
+                           "Oui" = "Présent",
+                           "absent" = "Absent"),
          Presence = if_else(is.na(Presence), "Présent", Presence)) %>%
   filter(Cdnom != "65899",
          Cdnom != "320575") # Supression de l'écrevisse de terre (courtillère) et calicot (données éronées)
