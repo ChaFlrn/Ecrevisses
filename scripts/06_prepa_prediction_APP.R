@@ -22,7 +22,9 @@ data_APP <- bdd_ecrevisse %>%
       Ecrevisse == "EEE" & Presence == "Présent" ~ "Absence",
       TRUE ~ "NSP")) %>%
   
-  filter(Presence_APP != "NSP")
+  filter(Presence_APP != "NSP") %>%
+  
+  st_point_on_surface()
   
 ####------------------------Tri stations------------------------------------####
 cli::cli_h1("Tri des stations à conserver")
@@ -38,46 +40,19 @@ cours_eau <- cours_eau %>%
 cours_eau$id_ligne <- 1:nrow(cours_eau)
 
 
-# Conversion des géométries polygones et lignes en points
-
-geom_type <- st_geometry_type(data_APP)
-
-app_pts <- data_APP[geom_type %in% c("POINT", "MULTIPOINT"),]
-
-app_autres <- data_APP[!geom_type %in% c("POINT", "MULTIPOINT"),]
-
-voisins_rivieres <- st_nearest_feature(app_autres, cours_eau)
-
-nearest_lines <- st_nearest_points(
-  app_autres,
-  cours_eau[voisins_rivieres, ],
-  pairwise = TRUE
-)
-
-nearest_points <- st_cast(nearest_lines, "POINT")
-source_points <- nearest_points[seq(1, length(nearest_points), by = 2)]
-
-app_autres <- st_set_geometry(app_autres, source_points)
-
-data_APP_pts <- rbind(app_pts,
-                      app_autres)
-
-data_APP_pts <- st_cast(data_APP_pts, "POINT")
-
-
 # Eviter plusieurs points au même endroit (restriction 20m)
 
-coords <- st_coordinates(data_APP_pts)
+coords <- st_coordinates(data_APP)
 
 cluster_20 <-dbscan(coords, eps = 20, minPts = 1)
 
-data_APP_pts$cluster_id <- cluster_20$cluster
+data_APP$cluster_id <- cluster_20$cluster
 
 
 
 # Sélection des points selon 3 filtres : espèce, effectif, date
 
-data_APP_final <- data_APP_pts %>%
+data_APP_final <- data_APP %>%
   mutate(priorite_esp = ifelse(Cdnom == "18437", 1, 0)) %>%
   group_by(cluster_id) %>%
   arrange(desc(priorite_esp),

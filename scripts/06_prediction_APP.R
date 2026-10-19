@@ -202,7 +202,7 @@ hist(troncons_ok$proba_presence)
 
 ##### Préparation fichier pour carte #####
 
-seuil <- 0.337 #seuil défini par les caractéristiques du modèle 
+seuil <- 0.341 #seuil défini par les caractéristiques du modèle 
 
 troncons_ok$predic <- ifelse(troncons_ok$proba_presence >= seuil, 1, 0)
 
