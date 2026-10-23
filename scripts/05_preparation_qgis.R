@@ -93,19 +93,13 @@ st_write(data_statut_2020, "processed_data/data_statut_2020.gpkg",
 ###---------------------------------------------------------#
 cli::cli_h1("Populations APP après 2020") 
 
-cours_eau <- st_read("assets/cours_deau_NA.gpkg")
-
-geom_type <- st_geometry_type(bdd_ecrevisse)
-
 data_APP <- bdd_ecrevisse %>%
   filter(Cdnom == "18437",
-         geom_type %in% c("POINT", "MULTIPOINT"),
          Presence == "Présent") %>%
   mutate(periode = case_when(
     Date < "2014" ~ "Avant 2014",
     Date >= "2014" & Date < "2024" ~ "Entre 2014 et 2023",
-    Date > "2023" ~ "Après 2023")) %>%
-  st_centroid()
+    Date > "2023" ~ "Après 2023"))
 
 
 st_write(data_APP, "processed_data/data_APP.gpkg", 
